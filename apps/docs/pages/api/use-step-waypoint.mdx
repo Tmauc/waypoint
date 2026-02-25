@@ -1,0 +1,37 @@
+---
+title: useStepWaypoint
+---
+
+# `useStepWaypoint`
+
+Declares the current step in a page or component. Automatically updates `currentStep` and `progress` in the active journey.
+
+## Import
+
+```ts
+import { useStepWaypoint } from "@waypoint/react";
+// or
+import { useStepWaypoint } from "@waypoint/next";
+```
+
+## Usage
+
+```tsx
+export default function ProfilePage() {
+  useStepWaypoint("profile");
+  // ...
+}
+```
+
+## Behavior
+
+- Reads the active journey from the Zustand store
+- If `currentStep` differs from `stepName`, updates both `currentStep` and `progress`
+- No-op if no active journey or if the step is already current
+- Must be called at the top level of a component (React hook rules)
+
+## Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `stepName` | `string` | The step identifier as declared in the journey tree |

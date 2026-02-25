@@ -1,0 +1,56 @@
+---
+title: URLTemplateEngine
+---
+
+# `URLTemplateEngine`
+
+Static utility class for URL template formatting, extraction, and validation.
+
+## Import
+
+```ts
+import { URLTemplateEngine } from "@waypoint/core";
+```
+
+## Methods
+
+### `format(template, params)`
+
+Replace `{{PARAM}}` placeholders with values. Missing params are left as-is.
+
+```ts
+URLTemplateEngine.format("/users/{{USER_ID}}/posts/{{POST_ID}}", {
+  USER_ID: "42",
+  POST_ID: "hello",
+})
+// → "/users/42/posts/hello"
+```
+
+### `extractPlaceholders(template)`
+
+Returns an array of placeholder names found in the template.
+
+```ts
+URLTemplateEngine.extractPlaceholders("/a/{{FOO}}/b/{{BAR}}")
+// → ["FOO", "BAR"]
+```
+
+### `validate(template, params)`
+
+Checks whether all placeholders can be resolved with the provided params.
+
+```ts
+const { isValid, missingParams } = URLTemplateEngine.validate(
+  "/users/{{USER_ID}}/posts/{{POST_ID}}",
+  { USER_ID: "42" }
+);
+// → { isValid: false, missingParams: ["POST_ID"] }
+```
+
+## Template syntax
+
+| Syntax | Example | Notes |
+|---|---|---|
+| `{{PARAM}}` | `/users/{{USER_ID}}` | Standard placeholder |
+| Numeric params | `{{CONTRACT_ID}}` | Auto-cast to `number` if `*_ID` suffix and value is all digits |
+| Missing params | — | Left unchanged (e.g. `{{MISSING}}`) with a console warning |

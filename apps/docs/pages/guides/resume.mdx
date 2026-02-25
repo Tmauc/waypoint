@@ -1,0 +1,60 @@
+---
+title: Resume
+---
+
+# Resume Guide
+
+Waypoint supports resuming a journey from the deepest step visited, useful for multi-session flows.
+
+## Enable resume
+
+Pass `canResumeToDeepestStep: true` when creating the journey:
+
+```ts
+useWaypointStore.getState().createJourney("checkout", CHECKOUT_TREE, true);
+```
+
+Or enable it on the initializer:
+
+```tsx
+useWaypointInitializer({
+  journeyId: "checkout",
+  tree: CHECKOUT_TREE,
+  // canResumeToDeepestStep is managed via the store
+});
+```
+
+## Enable resume from a specific step
+
+Set `enableResumeFromHere: true` on a step in the tree. When the user reaches that step, `canResumeToDeepestStep` is automatically activated:
+
+```ts
+{
+  step: "payment",
+  url: "/checkout/payment",
+  enableResumeFromHere: true,
+}
+```
+
+This is useful when you only want to allow resume after the user has passed a certain point (e.g. after authentication).
+
+## How initializer uses resume
+
+`useWaypointInitializer` resolves the target step like this:
+
+```
+if canResumeToDeepestStep:
+  target = deepestStepVisited || firstStep
+else:
+  target = firstStep
+```
+
+If the user is already on `target`, no navigation occurs.
+
+## Resetting resume state
+
+```ts
+useWaypointStore.getState().resetJourney("checkout");
+// Resets history, currentStep, progress, deepestStepVisited
+// Preserves the tree
+```

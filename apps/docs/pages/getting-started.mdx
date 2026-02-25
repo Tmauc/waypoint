@@ -1,0 +1,100 @@
+---
+title: Getting Started
+---
+
+# Getting Started
+
+## Installation
+
+```bash
+# For Next.js App Router
+pnpm add @waypoint/next @waypoint/core zustand
+
+# For plain React
+pnpm add @waypoint/react @waypoint/core zustand
+```
+
+## 1. Define a journey tree
+
+A journey tree is an ordered array of categories, each containing steps with a name and URL template.
+
+```ts
+import type { JourneyTreeType } from "@waypoint/core";
+
+export const ONBOARDING_TREE: JourneyTreeType = [
+  {
+    category: "personal",
+    steps: [
+      { step: "name",    url: "/onboarding/name" },
+      { step: "address", url: "/onboarding/address" },
+    ],
+  },
+  {
+    category: "review",
+    steps: [
+      { step: "summary", url: "/onboarding/summary" },
+    ],
+  },
+];
+```
+
+URL templates support `{{PARAM}}` placeholders:
+
+```ts
+{ step: "profile", url: "/users/{{USER_ID}}/profile" }
+```
+
+## 2. Initialize the journey
+
+Place `useWaypointInitializer` in a layout or parent component:
+
+```tsx
+// app/onboarding/layout.tsx
+"use client";
+import { useWaypointInitializer } from "@waypoint/next";
+import { ONBOARDING_TREE } from "@/lib/journey-config";
+
+export default function OnboardingLayout({ children }) {
+  const { isReady } = useWaypointInitializer({
+    journeyId: "onboarding",
+    tree: ONBOARDING_TREE,
+  });
+
+  if (!isReady) return <div>Loading…</div>;
+  return <>{children}</>;
+}
+```
+
+## 3. Declare the current step
+
+In each step page, call `useStepWaypoint` to register the current step:
+
+```tsx
+// app/onboarding/name/page.tsx
+"use client";
+import { useStepWaypoint } from "@waypoint/react";
+import { useWaypoint } from "@waypoint/next";
+
+export default function NamePage() {
+  useStepWaypoint("name"); // registers current step
+
+  const { goNext, goBack, urls } = useWaypoint();
+
+  return (
+    <>
+      <h1>Enter your name</h1>
+      <button onClick={() => goBack()}>Back</button>
+      <button onClick={() => goNext()}>Next</button>
+    </>
+  );
+}
+```
+
+## 4. Track progress
+
+```tsx
+import { useWaypointStore } from "@waypoint/core";
+
+const progress = useWaypointStore((s) => s.getJourney("onboarding")?.progress ?? 0);
+// 0–100
+```

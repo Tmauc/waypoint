@@ -1,0 +1,44 @@
+---
+title: Journey Tree
+---
+
+# Journey Tree
+
+A `JourneyTreeType` is an ordered array of **categories**, each containing an ordered array of **steps**.
+
+```ts
+type JourneyTreeType = Array<{
+  category: string;
+  steps: JourneyTreeStep[];
+}>;
+
+interface JourneyTreeStep {
+  step: string;         // unique step identifier
+  url: string;          // URL template (supports {{PARAM}} placeholders)
+  enableResumeFromHere?: boolean;
+}
+```
+
+## Step ordering
+
+Navigation (goNext / goBack) follows the flattened step order across all categories, depth-first:
+
+```
+category "A": [step1, step2]
+category "B": [step3, step4]
+→ flat order: step1 → step2 → step3 → step4
+```
+
+## URL templates
+
+URL templates use `{{PARAM_NAME}}` syntax. Parameters are automatically extracted from the current URL and merged with any params you provide explicitly.
+
+```ts
+{ step: "invoice", url: "/contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}" }
+```
+
+See [URL Templates guide](/guides/url-templates) for details.
+
+## enableResumeFromHere
+
+When `enableResumeFromHere: true` is set on a step, reaching that step automatically enables `canResumeToDeepestStep` for the journey. This means that if the user leaves and comes back, they will resume from that step (or later) rather than from the beginning.
