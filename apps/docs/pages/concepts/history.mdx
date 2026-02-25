@@ -1,0 +1,37 @@
+---
+title: History
+---
+
+# History
+
+Waypoint maintains a `history` array that tracks which steps have been visited, enabling smart back navigation.
+
+## How history works
+
+1. When you call `goNext()`, the **current step** is appended to history before navigating forward.
+2. When you call `goBack()`, waypoint finds the most recent step in history that exists in the tree.
+3. If you navigate forward to a different branch than history records, the future portion of history is **pruned** automatically.
+
+## Pruning future history
+
+If the user navigates forward along a different path than what history recorded (e.g. after a conditional branch), the stale future steps are removed:
+
+```
+history: [step1, step2, step3]
+         current: step2
+         goNext → navigates to step4 (not step3)
+         → history becomes: [step1, step2]
+```
+
+## Accessing history
+
+```ts
+const history = useWaypointStore((s) => s.getJourney("myJourney")?.history);
+```
+
+## Resetting
+
+```ts
+const { handleRestartNavigation } = useWaypoint();
+handleRestartNavigation(); // clears history, resets currentStep, navigates to start
+```

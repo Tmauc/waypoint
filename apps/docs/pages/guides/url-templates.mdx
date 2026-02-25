@@ -1,0 +1,63 @@
+---
+title: URL Templates
+---
+
+# URL Templates Guide
+
+## Syntax
+
+URL templates use double-brace placeholders: `{{PARAM_NAME}}`.
+
+```
+/contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}
+```
+
+## Automatic extraction
+
+Waypoint automatically extracts params from the **current URL** by matching it against the tree patterns. You don't need to manually pass repeated params.
+
+```tsx
+// Current URL: /contracts/42/invoices/7
+// Step URL template: /contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}
+
+const { extractedParams } = useWaypoint();
+// extractedParams → { CONTRACT_ID: 42, INVOICE_ID: 7 }
+```
+
+## Passing params on navigate
+
+You only need to provide params that are **new** or should **override** the extracted ones:
+
+```tsx
+goNext({ NEXT_ID: "new-value" });
+// CONTRACT_ID is automatically carried from the current URL
+```
+
+## Numeric params
+
+Params whose name ends in `_ID` and whose URL value consists entirely of digits are automatically cast to `number`:
+
+```
+/contracts/{{CONTRACT_ID}}/items → CONTRACT_ID = 42 (number)
+/contracts/{{CONTRACT_TYPE}}/items → CONTRACT_TYPE = "42" (string)
+```
+
+## Validation in dev
+
+In development mode, waypoint logs a warning when navigating with incomplete params:
+
+```
+Waypoint: navigating with incomplete parameters. Missing: INVOICE_ID
+```
+
+## Manual URL building
+
+```tsx
+const { buildUrl, getStepUrl } = useWaypoint();
+
+// Build any URL
+const url = buildUrl("/reports/{{REPORT_ID}}", { REPORT_ID: "monthly" });
+
+// Get URL for a named step
+const profileUrl = getStepUrl("profile", { USER_ID: "99" });
+```

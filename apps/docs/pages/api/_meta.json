@@ -1,0 +1,7 @@
+{
+  "use-waypoint": "useWaypoint",
+  "use-waypoint-initializer": "useWaypointInitializer",
+  "use-step-waypoint": "useStepWaypoint",
+  "use-waypoint-store": "useWaypointStore",
+  "url-template-engine": "URLTemplateEngine"
+}

@@ -1,0 +1,54 @@
+---
+title: useWaypoint
+---
+
+# `useWaypoint`
+
+The main navigation hook. Returns navigation functions and computed URLs for the current (or specified) journey.
+
+## Import
+
+```ts
+// Next.js (auto-wires router)
+import { useWaypoint } from "@waypoint/next";
+
+// Plain React (requires router adapter)
+import { useWaypoint } from "@waypoint/react";
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `journeyId` | `string` | active journey | Journey to operate on |
+| `excludeSteps` | `string[]` | `[]` | Step names to skip |
+| `router` | `RouterAdapter` | — | Required for `@waypoint/react` |
+
+## Returns: `WaypointNavigation`
+
+| Property | Type | Description |
+|---|---|---|
+| `journeyId` | `string` | Resolved journey ID |
+| `goNext(params?)` | `fn` | Navigate to next step |
+| `goBack(params?)` | `fn` | Navigate to previous step in history |
+| `goStart(params?)` | `fn` | Navigate to first step |
+| `goTo(options)` | `fn` | Navigate to arbitrary URL |
+| `handleRestartNavigation(params?)` | `fn` | Reset and go to start |
+| `buildUrl(url, params?)` | `fn` | Build a formatted URL |
+| `getStepUrl(stepName, params?)` | `fn` | Get URL for a named step |
+| `extractedParams` | `WaypointParams` | Params extracted from current URL |
+| `urls.next` | `string?` | Raw URL template for next step |
+| `urls.previous` | `string?` | Raw URL template for previous step |
+| `urls.start` | `string?` | Raw URL template for first step |
+
+## Example
+
+```tsx
+const { goNext, goBack, extractedParams } = useWaypoint();
+
+// Navigate with params
+goNext({ CONTRACT_ID: "42" });
+
+// Access params from current URL
+console.log(extractedParams.CONTRACT_ID); // "42"
+```

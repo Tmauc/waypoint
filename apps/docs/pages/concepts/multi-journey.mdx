@@ -1,0 +1,51 @@
+---
+title: Multi-Journey
+---
+
+# Multi-Journey
+
+Waypoint supports multiple independent journeys running in parallel, each with completely isolated state.
+
+## Use cases
+
+- A multi-product checkout: one journey per product type
+- Wizard A starts before Wizard B finishes
+- Background journey that runs alongside a foreground flow
+
+## Creating multiple journeys
+
+Each journey needs a unique `journeyId`:
+
+```ts
+const store = useWaypointStore.getState();
+store.createJourney("account-setup", ACCOUNT_TREE);
+store.createJourney("subscription", SUBSCRIPTION_TREE);
+```
+
+## Active journey
+
+Only one journey is "active" at a time. The active journey is what `useWaypoint()` (without a `journeyId` option) operates on.
+
+```ts
+store.setActiveJourney("account-setup");
+```
+
+## Targeting a specific journey
+
+Pass `journeyId` explicitly to operate on a non-active journey:
+
+```tsx
+const nav = useWaypoint({ journeyId: "subscription" });
+nav.goNext();
+```
+
+## Cleanup
+
+```ts
+// Deferred deletion (safe during renders)
+store.markJourneyForDeletion("account-setup");
+store.cleanMarkedJourneys(); // call at a safe moment
+
+// Immediate deletion
+store.deleteJourney("account-setup");
+```

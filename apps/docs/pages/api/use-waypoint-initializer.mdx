@@ -1,0 +1,55 @@
+---
+title: useWaypointInitializer
+---
+
+# `useWaypointInitializer`
+
+Initializes a journey: creates it if needed, sets it active, and navigates to the correct starting step.
+
+## Import
+
+```ts
+import { useWaypointInitializer } from "@waypoint/next";
+// or
+import { useWaypointInitializer } from "@waypoint/react";
+```
+
+## Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `journeyId` | `string` | — | **Required.** Unique journey identifier |
+| `tree` | `JourneyTreeType` | — | **Required.** Navigation tree |
+| `dataAsLoaded` | `boolean` | `true` | Delay navigation until data is ready |
+| `urlParams` | `Record<string, string>` | `{}` | Params used to build the initial URL |
+| `onSetup` | `() => void` | — | Callback fired once the journey is initialized |
+| `router` | `RouterAdapter` | — | Required for `@waypoint/react` |
+
+## Returns
+
+| Property | Type | Description |
+|---|---|---|
+| `journey` | `JourneyState \| undefined` | Current journey state |
+| `navigation` | `WaypointNavigation` | Navigation object (same as `useWaypoint`) |
+| `isReady` | `boolean` | True when journey exists and data is loaded |
+
+## Example
+
+```tsx
+export default function OnboardingLayout({ children }) {
+  const { isReady } = useWaypointInitializer({
+    journeyId: "onboarding",
+    tree: ONBOARDING_TREE,
+    dataAsLoaded: !!userData, // wait for async data
+    urlParams: { USER_ID: userId },
+  });
+
+  if (!isReady) return <Spinner />;
+  return <>{children}</>;
+}
+```
+
+## Resume behavior
+
+- If `canResumeToDeepestStep` is `false` (default): always navigates to the first step.
+- If `canResumeToDeepestStep` is `true`: navigates to `deepestStepVisited`, falling back to the first step.

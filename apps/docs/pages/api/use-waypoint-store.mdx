@@ -1,0 +1,66 @@
+---
+title: useWaypointStore
+---
+
+# `useWaypointStore`
+
+The underlying Zustand store. Gives direct access to all journey state and actions.
+
+## Import
+
+```ts
+import { useWaypointStore } from "@waypoint/core";
+```
+
+## State
+
+| Key | Type | Description |
+|---|---|---|
+| `journeys` | `Record<string, JourneyState>` | All journey states |
+| `activeJourneyId` | `string \| null` | Currently active journey |
+| `journeysToDelete` | `string[]` | Journeys queued for deletion |
+
+## `JourneyState`
+
+| Key | Type | Description |
+|---|---|---|
+| `tree` | `JourneyTreeType` | Navigation tree |
+| `currentStep` | `string \| null` | Active step |
+| `history` | `string[]` | Visited steps |
+| `deepestStepVisited` | `string` | Furthest step reached |
+| `progress` | `number` | Progress 0–100 |
+| `canResumeToDeepestStep` | `boolean` | Resume feature toggle |
+
+## Actions (selected)
+
+```ts
+const store = useWaypointStore.getState();
+
+// Journey lifecycle
+store.createJourney(id, tree, canResume?)
+store.deleteJourney(id)
+store.resetJourney(id)
+store.resetAll()
+
+// Deferred deletion
+store.markJourneyForDeletion(id)
+store.cleanMarkedJourneys()
+
+// Navigation state
+store.setActiveJourney(id | null)
+store.setCurrentStep(id, step)
+store.setHistory(id, history)
+store.setProgress(id, progress)   // clamped 0–100
+store.setDeepestStepVisited(id, step)
+store.setCanResumeToDeepestStep(id, bool)
+
+// Queries
+store.getJourney(id) → JourneyState | undefined
+store.getActiveJourney() → JourneyState | undefined
+store.hasJourney(id) → boolean
+store.getAllJourneyIds() → string[]
+```
+
+## Persistence
+
+The store uses Zustand `persist` middleware with the key `"waypoint-store"` (localStorage by default).
