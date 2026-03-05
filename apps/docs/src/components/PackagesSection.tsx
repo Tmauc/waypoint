@@ -2,23 +2,30 @@ const PACKAGES = [
   {
     name: "@waypoint/core",
     description:
-      "Framework-agnostic engine. Journey tree builder, step resolution, history management, and progress calculation.",
+      "Schema types, condition engine, tree resolver, Zustand runtime store and Zod schema generator. Zero React dependency.",
     install: "pnpm add @waypoint/core",
     accent: "#8b5cf6",
   },
   {
     name: "@waypoint/react",
     description:
-      "React hooks and context providers. useJourney, useStep, useProgress — all the primitives you need.",
+      "Headless hooks for any React app. useWaypoint and useWaypointStep take a store instance and are router-agnostic.",
     install: "pnpm add @waypoint/react",
     accent: "#00d4ff",
   },
   {
     name: "@waypoint/next",
     description:
-      "Next.js integration with App Router support. URL syncing, middleware helpers, and server-side resume.",
+      "Next.js App Router integration. WaypointRunner provider, useWaypointStep with react-hook-form + Zod, auto-resume.",
     install: "pnpm add @waypoint/next",
     accent: "#22c55e",
+  },
+  {
+    name: "@waypoint/builder",
+    description:
+      "Embeddable no-code UI for building WaypointSchemas. 3-column editor + live preview mode. Drop it anywhere in your app.",
+    install: "pnpm add @waypoint/builder",
+    accent: "#f59e0b",
   },
 ];
 
@@ -31,14 +38,14 @@ export function PackagesSection() {
             className="text-3xl sm:text-4xl font-bold mb-4"
             style={{ color: "#fff" }}
           >
-            Three packages, one system
+            Four packages, one system
           </h2>
           <p style={{ color: "rgba(255,255,255,0.5)" }}>
             Use only what you need. Each package is independently installable.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PACKAGES.map((pkg) => (
             <div
               key={pkg.name}

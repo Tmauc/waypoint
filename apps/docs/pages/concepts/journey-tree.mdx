@@ -1,44 +1,150 @@
 ---
-title: Journey Tree
+title: WaypointSchema
 ---
 
-# Journey Tree
+import { Callout } from "nextra/components";
 
-A `JourneyTreeType` is an ordered array of **categories**, each containing an ordered array of **steps**.
+# WaypointSchema
+
+The `WaypointSchema` is the single source of truth for a journey. It is a plain JSON object describing every step, field, validation rule, condition and external variable. It is portable — export it, commit it, and pass it as a prop to `WaypointRunner` or `WaypointBuilder`.
+
+## Top-level shape
 
 ```ts
-type JourneyTreeType = Array<{
-  category: string;
-  steps: JourneyTreeStep[];
-}>;
-
-interface JourneyTreeStep {
-  step: string;         // unique step identifier
-  url: string;          // URL template (supports {{PARAM}} placeholders)
-  enableResumeFromHere?: boolean;
+interface WaypointSchema {
+  version: "1";
+  id: string;                           // unique journey identifier
+  name: string;                         // display name
+  steps: StepDefinition[];
+  externalVariables?: ExternalVariable[];
+  customTypes?: CustomTypeDefinition[];
+  persistenceMode?: PersistenceMode;    // "zustand" | "backend-step" | "backend-manual"
+  metadata?: Record<string, unknown>;
 }
 ```
 
-## Step ordering
-
-Navigation (goNext / goBack) follows the flattened step order across all categories, depth-first:
-
-```
-category "A": [step1, step2]
-category "B": [step3, step4]
-→ flat order: step1 → step2 → step3 → step4
-```
-
-## URL templates
-
-URL templates use `{{PARAM_NAME}}` syntax. Parameters are automatically extracted from the current URL and merged with any params you provide explicitly.
+## StepDefinition
 
 ```ts
-{ step: "invoice", url: "/contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}" }
+interface StepDefinition {
+  id: string;
+  title: string;
+  url: string;                    // URL for this step — e.g. "/onboarding/personal"
+  fields: FieldDefinition[];
+  visibleWhen?: ConditionGroup;   // hide/show the entire step based on data
+  enableResumeFromHere?: boolean; // mark as a valid deep-link entry point
+}
 ```
 
-See [URL Templates guide](/guides/url-templates) for details.
+Steps are ordered. `resolveTree()` evaluates `visibleWhen` on each step against current form data to produce the list of steps actually presented to the user.
 
-## enableResumeFromHere
+## FieldDefinition
 
-When `enableResumeFromHere: true` is set on a step, reaching that step automatically enables `canResumeToDeepestStep` for the journey. This means that if the user leaves and comes back, they will resume from that step (or later) rather than from the beginning.
+```ts
+interface FieldDefinition {
+  id: string;
+  type: FieldType;               // "text" | "email" | "select" | ...
+  label: string;
+  placeholder?: string;
+  defaultValue?: unknown;
+  options?: SelectOption[];      // for select / multiselect / radio
+  validation?: ValidationRule[];
+  visibleWhen?: ConditionGroup;  // field-level visibility
+  dependsOn?: string[];          // dot-paths: "stepId.fieldId" or "$ext.varId"
+}
+```
+
+### Built-in field types
+
+| Type | Input |
+|---|---|
+| `text` `email` `password` `tel` `url` `number` `date` | `<input type="…">` |
+| `textarea` | `<textarea>` |
+| `select` | `<select>` |
+| `multiselect` | `<select multiple>` |
+| `radio` | `<input type="radio">` group |
+| `checkbox` | `<input type="checkbox">` |
+| `file` | `<input type="file">` |
+
+Custom types can be added to the schema via `customTypes` and registered in the builder.
+
+## ValidationRule
+
+```ts
+interface ValidationRule {
+  type: "required" | "min" | "max" | "minLength" | "maxLength"
+      | "email" | "url" | "regex" | "custom";
+  value?: string | number;    // for min/max/minLength/maxLength/regex
+  message: string;            // error text shown to the user
+  customValidatorId?: string; // for "custom" — id registered at runtime
+}
+```
+
+`buildZodSchema(fields)` from `@waypoint/core` converts these rules into a Zod object schema automatically. `useWaypointStep()` in `@waypoint/next` uses this schema to drive react-hook-form validation.
+
+## ExternalVariable
+
+Variables whose values come from outside the journey (session data, API response, URL params) that conditions can reference as `$ext.varId`.
+
+```ts
+interface ExternalVariable {
+  id: string;
+  label: string;
+  type: "string" | "number" | "boolean" | "object";
+  blocking: boolean;        // if true and value is missing, runner blocks rendering
+  usedIn?: Array<{ stepId: string; fieldId?: string }>;
+}
+```
+
+Pass values via `WaypointRunner`'s `externalVars` prop.
+
+## PersistenceMode
+
+| Value | Behaviour |
+|---|---|
+| `"zustand"` | Zustand persist middleware writes to `localStorage`. State resumes on reload. |
+| `"backend-step"` | `onStepComplete` is called after every step — persist server-side per step. |
+| `"backend-manual"` | You control when to persist via `onDataChange`. |
+
+## Example — conditional step
+
+```ts
+const schema: WaypointSchema = {
+  version: "1",
+  id: "insurance",
+  name: "Insurance Quote",
+  steps: [
+    {
+      id: "basics",
+      title: "Basic info",
+      url: "/quote/basics",
+      fields: [
+        { id: "age", type: "number", label: "Your age",
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "senior",
+      title: "Senior options",
+      url: "/quote/senior",
+      // Only shown when age >= 65
+      visibleWhen: {
+        combinator: "and",
+        rules: [{ field: "basics.age", operator: "greaterThanOrEqual", value: 65 }],
+      },
+      fields: [
+        { id: "healthPlan", type: "select", label: "Health plan",
+          options: [{ label: "Basic", value: "basic" }, { label: "Extended", value: "extended" }] },
+      ],
+    },
+    {
+      id: "summary",
+      title: "Summary",
+      url: "/quote/summary",
+      fields: [],
+    },
+  ],
+};
+```
+
+See [Conditions](/concepts/progress) for the full list of operators and how to compose groups.

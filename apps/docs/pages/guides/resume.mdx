@@ -1,60 +1,195 @@
 ---
-title: Resume
+title: React (Headless)
 ---
 
-# Resume Guide
+import { Callout } from "nextra/components";
 
-Waypoint supports resuming a journey from the deepest step visited, useful for multi-session flows.
+# React Integration (Headless)
 
-## Enable resume
+Use `@waypoint/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
 
-Pass `canResumeToDeepestStep: true` when creating the journey:
+## Installation
 
-```ts
-useWaypointStore.getState().createJourney("checkout", CHECKOUT_TREE, true);
+```bash
+pnpm add @waypoint/react @waypoint/core
 ```
 
-Or enable it on the initializer:
+## Architecture
+
+Unlike `@waypoint/next`, the headless package ships no provider component. You manage:
+- Creating and storing the store instance
+- Calling `init()` or `resume()` on mount
+- Navigating between steps with your router
+
+## Basic setup
 
 ```tsx
-useWaypointInitializer({
-  journeyId: "checkout",
-  tree: CHECKOUT_TREE,
-  // canResumeToDeepestStep is managed via the store
-});
-```
+// contexts/journey-context.tsx
+"use client";
 
-## Enable resume from a specific step
+import { createContext, useContext, useRef, useEffect } from "react";
+import { createRuntimeStore } from "@waypoint/core";
+import type { RuntimeStore, WaypointSchema } from "@waypoint/core";
 
-Set `enableResumeFromHere: true` on a step in the tree. When the user reaches that step, `canResumeToDeepestStep` is automatically activated:
+const JourneyContext = createContext<RuntimeStore | null>(null);
 
-```ts
-{
-  step: "payment",
-  url: "/checkout/payment",
-  enableResumeFromHere: true,
+export function JourneyProvider({
+  schema,
+  children,
+}: {
+  schema: WaypointSchema;
+  children: React.ReactNode;
+}) {
+  const storeRef = useRef<RuntimeStore | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createRuntimeStore();
+  }
+
+  useEffect(() => {
+    storeRef.current!.getState().init(schema);
+  }, [schema.id]);
+
+  return (
+    <JourneyContext.Provider value={storeRef.current}>
+      {children}
+    </JourneyContext.Provider>
+  );
+}
+
+export function useJourneyStore() {
+  const store = useContext(JourneyContext);
+  if (!store) throw new Error("useJourneyStore must be used inside <JourneyProvider>");
+  return store;
 }
 ```
 
-This is useful when you only want to allow resume after the user has passed a certain point (e.g. after authentication).
+## Using the hooks
 
-## How initializer uses resume
+```tsx
+// components/StepShell.tsx
+import { useWaypoint } from "@waypoint/react";
+import { useJourneyStore } from "@/contexts/journey-context";
+import { useNavigate } from "react-router-dom";
 
-`useWaypointInitializer` resolves the target step like this:
+export function StepShell({ stepId, children }) {
+  const store = useJourneyStore();
+  const navigate = useNavigate();
 
+  const {
+    currentStep,
+    nextStep,
+    previousStep,
+    progress,
+    isFirstStep,
+    isLastStep,
+    setCurrentStep,
+  } = useWaypoint(store);
+
+  function goNext() {
+    if (nextStep) {
+      setCurrentStep(nextStep.definition.id);
+      navigate(nextStep.definition.url);
+    }
+  }
+
+  function goBack() {
+    if (previousStep) {
+      setCurrentStep(previousStep.definition.id);
+      navigate(previousStep.definition.url);
+    }
+  }
+
+  return (
+    <div>
+      <ProgressBar value={progress} />
+      <h1>{currentStep?.definition.title}</h1>
+      {children}
+      <div>
+        {!isFirstStep && <button onClick={goBack}>← Back</button>}
+        {!isLastStep && <button onClick={goNext}>Continue →</button>}
+      </div>
+    </div>
+  );
+}
 ```
-if canResumeToDeepestStep:
-  target = deepestStepVisited || firstStep
-else:
-  target = firstStep
+
+## Accessing a specific step's fields
+
+```tsx
+import { useWaypointStep } from "@waypoint/react";
+import { useJourneyStore } from "@/contexts/journey-context";
+
+function PersonalFields() {
+  const store = useJourneyStore();
+  const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
+
+  return (
+    <div>
+      {fields.map((field) => (
+        <input
+          key={field.definition.id}
+          value={(stepData[field.definition.id] as string) ?? ""}
+          placeholder={field.definition.placeholder}
+          onChange={(e) => setFieldValue(field.definition.id, e.target.value)}
+        />
+      ))}
+    </div>
+  );
+}
 ```
 
-If the user is already on `target`, no navigation occurs.
+## Adding validation
 
-## Resetting resume state
+Combine `buildZodSchema` with react-hook-form manually:
 
-```ts
-useWaypointStore.getState().resetJourney("checkout");
-// Resets history, currentStep, progress, deepestStepVisited
-// Preserves the tree
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { buildZodSchema } from "@waypoint/core";
+import { useWaypointStep } from "@waypoint/react";
+
+function StepForm({ store, stepId }) {
+  const { fields, stepData, setStepData } = useWaypointStep(store, stepId);
+
+  const form = useForm({
+    resolver: zodResolver(buildZodSchema(fields)),
+    defaultValues: stepData,
+  });
+
+  function handleSubmit(values) {
+    setStepData(values);
+    // then navigate to next step
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(handleSubmit)}>
+      {fields.map((field) => (
+        <input key={field.definition.id} {...form.register(field.definition.id)} />
+      ))}
+      <button type="submit">Continue</button>
+    </form>
+  );
+}
+```
+
+<Callout type="info">
+  `@waypoint/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
+</Callout>
+
+## Persistence (manual)
+
+```tsx
+// Create store with localStorage persistence
+const storeRef = useRef(
+  createRuntimeStore({ persistenceMode: "zustand", schemaId: schema.id })
+);
+
+useEffect(() => {
+  const store = storeRef.current;
+  if (hasPersistedState(store, schema.id)) {
+    store.getState().resume(schema);
+  } else {
+    store.getState().init(schema);
+  }
+}, []);
 ```

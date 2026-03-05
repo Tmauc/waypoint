@@ -7,10 +7,10 @@ export function CodeSection() {
             className="text-3xl sm:text-4xl font-bold mb-4"
             style={{ color: "#fff" }}
           >
-            Minimal API
+            Schema → Runner → Done
           </h2>
           <p style={{ color: "rgba(255,255,255,0.5)" }}>
-            Define once. Navigate anywhere.
+            Define your journey once. Waypoint handles the rest.
           </p>
         </div>
 
@@ -34,7 +34,7 @@ export function CodeSection() {
               className="ml-4 text-xs font-mono"
               style={{ color: "rgba(255,255,255,0.3)" }}
             >
-              journey.ts
+              onboarding/layout.tsx
             </span>
           </div>
 
@@ -46,64 +46,93 @@ export function CodeSection() {
             <code>
               <Line>
                 <Kw>import</Kw>
-                {" { createJourney } "}
+                {" { WaypointRunner } "}
                 <Kw>from</Kw>
                 {" "}
-                <Str>&apos;@waypoint/core&apos;</Str>
+                <Str>&apos;@waypoint/next&apos;</Str>
+                {";"}
+              </Line>
+              <Line>
+                <Kw>import</Kw>
+                {" { schema } "}
+                <Kw>from</Kw>
+                {" "}
+                <Str>&apos;./schema&apos;</Str>
                 {";"}
               </Line>
               <br />
               <Line>
-                <Kw>const</Kw>
-                {" journey = "}
-                <Fn>createJourney</Fn>
-                {"({"}
+                <Cmt>{"// Wrap your steps — that's it"}</Cmt>
+              </Line>
+              <Line>
+                <Kw>export default function</Kw>
+                {" "}
+                <Fn>Layout</Fn>
+                {"({ children }) {"}
               </Line>
               <Line indent={1}>
-                {"id: "}
-                <Str>&apos;onboarding&apos;</Str>
-                {","}
-              </Line>
-              <Line indent={1}>{"steps: ["}</Line>
-              <Line indent={2}>
-                {"{ id: "}
-                <Str>&apos;welcome&apos;</Str>
-                {", url: "}
-                <Str>&apos;/start&apos;</Str>
-                {" },"}
+                <Kw>return</Kw>
+                {" ("}
               </Line>
               <Line indent={2}>
-                {"{ id: "}
-                <Str>&apos;profile&apos;</Str>
-                {", url: "}
-                <Str>&apos;/profile&apos;</Str>
-                {" },"}
+                {"<"}
+                <Fn>WaypointRunner</Fn>
               </Line>
+              <Line indent={3}>
+                <Var>schema</Var>
+                {"={schema}"}
+              </Line>
+              <Line indent={3}>
+                <Var>onComplete</Var>
+                {"={(data) => "}
+                <Fn>save</Fn>
+                {"(data)}"}
+              </Line>
+              <Line indent={2}>{">"}</Line>
+              <Line indent={3}>{"{ children }"}</Line>
               <Line indent={2}>
-                {"{ id: "}
-                <Str>&apos;confirm&apos;</Str>
-                {", url: "}
-                <Str>&apos;/done&apos;</Str>
-                {" },"}
+                {"</"}
+                <Fn>WaypointRunner</Fn>
+                {">"}
               </Line>
-              <Line indent={1}>{"],"}</Line>
-              <Line>{"});"}</Line>
+              <Line indent={1}>{")"}</Line>
+              <Line>{"}"}</Line>
               <br />
               <Line>
-                <Cmt>{"// In your component"}</Cmt>
+                <Cmt>{"// In each step page"}</Cmt>
               </Line>
               <Line>
+                <Kw>export default function</Kw>
+                {" "}
+                <Fn>StepPage</Fn>
+                {"() {"}
+              </Line>
+              <Line indent={1}>
                 <Kw>const</Kw>
                 {" { "}
-                <Var>next</Var>
+                <Var>fields</Var>
                 {", "}
-                <Var>prev</Var>
+                <Var>form</Var>
+                {", "}
+                <Var>handleSubmit</Var>
                 {", "}
                 <Var>progress</Var>
                 {" } = "}
-                <Fn>useJourney</Fn>
-                {"(journey);"}
+                <Fn>useWaypointStep</Fn>
+                {"();"}
               </Line>
+              <Line indent={1}>
+                <Kw>return</Kw>
+                {" <"}
+                <Fn>StepRenderer</Fn>
+                {" "}
+                <Var>fields</Var>
+                {"={fields}"}
+                {" "}
+                <Var>onNext</Var>
+                {"={handleSubmit} />;"}
+              </Line>
+              <Line>{"}"}</Line>
             </code>
           </pre>
         </div>

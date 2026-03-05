@@ -1,66 +1,166 @@
 ---
-title: useWaypointStore
+title: "@waypoint/builder"
 ---
 
-# `useWaypointStore`
+import { Callout } from "nextra/components";
 
-The underlying Zustand store. Gives direct access to all journey state and actions.
+# @waypoint/builder
 
-## Import
+An embeddable no-code UI for building and testing `WaypointSchema` objects. Drop it into any React or Next.js app.
 
-```ts
-import { useWaypointStore } from "@waypoint/core";
+```bash
+pnpm add @waypoint/builder @waypoint/core
 ```
 
-## State
+---
 
-| Key | Type | Description |
-|---|---|---|
-| `journeys` | `Record<string, JourneyState>` | All journey states |
-| `activeJourneyId` | `string \| null` | Currently active journey |
-| `journeysToDelete` | `string[]` | Journeys queued for deletion |
+## \<WaypointBuilder\>
 
-## `JourneyState`
+A self-contained editor component that renders a 3-column layout (step list, field list, step/field editors) and exports a `WaypointSchema`.
 
-| Key | Type | Description |
-|---|---|---|
-| `tree` | `JourneyTreeType` | Navigation tree |
-| `currentStep` | `string \| null` | Active step |
-| `history` | `string[]` | Visited steps |
-| `deepestStepVisited` | `string` | Furthest step reached |
-| `progress` | `number` | Progress 0–100 |
-| `canResumeToDeepestStep` | `boolean` | Resume feature toggle |
+```tsx
+import { WaypointBuilder } from "@waypoint/builder";
 
-## Actions (selected)
-
-```ts
-const store = useWaypointStore.getState();
-
-// Journey lifecycle
-store.createJourney(id, tree, canResume?)
-store.deleteJourney(id)
-store.resetJourney(id)
-store.resetAll()
-
-// Deferred deletion
-store.markJourneyForDeletion(id)
-store.cleanMarkedJourneys()
-
-// Navigation state
-store.setActiveJourney(id | null)
-store.setCurrentStep(id, step)
-store.setHistory(id, history)
-store.setProgress(id, progress)   // clamped 0–100
-store.setDeepestStepVisited(id, step)
-store.setCanResumeToDeepestStep(id, bool)
-
-// Queries
-store.getJourney(id) → JourneyState | undefined
-store.getActiveJourney() → JourneyState | undefined
-store.hasJourney(id) → boolean
-store.getAllJourneyIds() → string[]
+<WaypointBuilder
+  defaultValue={existingSchema}
+  onChange={(schema) => console.log(schema)}
+  onSave={async (schema) => {
+    await fetch("/api/schemas", { method: "POST", body: JSON.stringify(schema) });
+  }}
+/>
 ```
 
-## Persistence
+### Props
 
-The store uses Zustand `persist` middleware with the key `"waypoint-store"` (localStorage by default).
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `defaultValue` | `WaypointSchema` | | Initial schema to load |
+| `onChange` | `(schema: WaypointSchema) => void` | | Called on every change |
+| `onSave` | `(schema: WaypointSchema) => void \| Promise<void>` | | Called when user clicks "Save" |
+| `theme` | `WaypointTheme` | | Custom theme (colors, fonts) |
+| `className` | `string` | | CSS class on the root element |
+| `style` | `React.CSSProperties` | | Inline style on the root element |
+
+### Layout
+
+The builder renders in a **3-column layout**:
+
+| Column | Content |
+|---|---|
+| Left | Step list + External Variables panel |
+| Centre | Field list for the selected step |
+| Right | Step editor (title, URL, conditions) + Field editor |
+
+The builder requires explicit dimensions — set `height: 100%` on a sized parent or use `style={{ height: "100vh" }}` for full-screen.
+
+### Preview mode
+
+Clicking **▶ Tester** in the toolbar switches to a **split view**:
+
+- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden
+- **Right panel** — live step renderer with field inputs, inline validation, progress bar, and Prev/Next navigation
+
+Click **← Éditer** to return to the builder. The preview uses an isolated in-memory store — no localStorage, no side effects.
+
+### Theme
+
+```ts
+import { WaypointBuilder, DEFAULT_THEME, DARK_THEME } from "@waypoint/builder";
+
+// Pass a partial theme to override specific tokens
+<WaypointBuilder
+  theme={{ primary: "#6366f1", canvas: "#0f172a" }}
+/>
+```
+
+Built-in themes: `DEFAULT_THEME`, `DARK_THEME`. All values are mapped to CSS custom properties at the root element.
+
+---
+
+## useBuilderStore
+
+Access the builder's internal Zustand store for programmatic control.
+
+```ts
+import { useBuilderStore } from "@waypoint/builder";
+
+const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
+```
+
+### Useful methods
+
+| Method | Description |
+|---|---|
+| `loadSchema(schema)` | Load a schema into the builder |
+| `resetSchema()` | Reset to the empty default schema |
+
+<Callout type="warning">
+  `useBuilderStore` is a singleton — there can only be one builder instance per page. For multiple builders, you'd need to isolate each in its own React root.
+</Callout>
+
+---
+
+## Embedding in Next.js
+
+```tsx
+// app/admin/builder/page.tsx
+"use client";
+
+import { WaypointBuilder } from "@waypoint/builder";
+import { useRouter } from "next/navigation";
+
+export default function BuilderPage() {
+  const router = useRouter();
+
+  return (
+    <div style={{ height: "100vh" }}>
+      <WaypointBuilder
+        onSave={async (schema) => {
+          const res = await fetch("/api/journey-schemas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(schema),
+          });
+          if (res.ok) router.push("/admin/journeys");
+        }}
+      />
+    </div>
+  );
+}
+```
+
+## Loading an existing schema
+
+```tsx
+"use client";
+
+import { WaypointBuilder } from "@waypoint/builder";
+import { useEffect, useState } from "react";
+import type { WaypointSchema } from "@waypoint/core";
+
+export default function EditSchemaPage({ params }: { params: { id: string } }) {
+  const [schema, setSchema] = useState<WaypointSchema | undefined>();
+
+  useEffect(() => {
+    fetch(`/api/journey-schemas/${params.id}`)
+      .then((r) => r.json())
+      .then(setSchema);
+  }, [params.id]);
+
+  if (!schema) return <div>Loading…</div>;
+
+  return (
+    <div style={{ height: "100vh" }}>
+      <WaypointBuilder
+        defaultValue={schema}
+        onSave={async (updated) => {
+          await fetch(`/api/journey-schemas/${params.id}`, {
+            method: "PUT",
+            body: JSON.stringify(updated),
+          });
+        }}
+      />
+    </div>
+  );
+}
+```

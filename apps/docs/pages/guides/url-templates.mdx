@@ -1,63 +1,249 @@
 ---
-title: URL Templates
+title: Next.js Integration
 ---
 
-# URL Templates Guide
+import { Callout, Steps } from "nextra/components";
 
-## Syntax
+# Next.js Integration
 
-URL templates use double-brace placeholders: `{{PARAM_NAME}}`.
+A complete guide to integrating Waypoint in a Next.js App Router project.
+
+## Prerequisites
+
+```bash
+pnpm add @waypoint/next @waypoint/core
+```
+
+## File structure
 
 ```
-/contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}
+app/
+├── onboarding/
+│   ├── layout.tsx       ← WaypointRunner lives here
+│   ├── personal/
+│   │   └── page.tsx     ← step "personal"
+│   ├── company/
+│   │   └── page.tsx     ← step "company" (conditional)
+│   └── confirm/
+│       └── page.tsx     ← step "confirm"
+└── dashboard/
+    └── page.tsx
 ```
 
-## Automatic extraction
+Each step's `url` in your schema must exactly match its Next.js route path.
 
-Waypoint automatically extracts params from the **current URL** by matching it against the tree patterns. You don't need to manually pass repeated params.
+---
+
+## 1. Define the schema
+
+```ts
+// lib/onboarding.schema.ts
+import type { WaypointSchema } from "@waypoint/core";
+
+export const onboardingSchema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  persistenceMode: "zustand",   // auto-save to localStorage
+  steps: [
+    {
+      id: "personal",
+      title: "Personal info",
+      url: "/onboarding/personal",
+      fields: [
+        { id: "firstName", type: "text",  label: "First name",
+          validation: [{ type: "required", message: "Required" }] },
+        { id: "email",     type: "email", label: "Email",
+          validation: [{ type: "required", message: "Required" }, { type: "email", message: "Invalid email" }] },
+        { id: "accountType", type: "select", label: "Account type",
+          options: [{ label: "Personal", value: "personal" }, { label: "Professional", value: "professional" }],
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "company",
+      title: "Company details",
+      url: "/onboarding/company",
+      // Only shown when accountType === "professional"
+      visibleWhen: {
+        combinator: "and",
+        rules: [{ field: "personal.accountType", operator: "equals", value: "professional" }],
+      },
+      fields: [
+        { id: "companyName", type: "text", label: "Company name",
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "confirm",
+      title: "Confirm",
+      url: "/onboarding/confirm",
+      fields: [],
+    },
+  ],
+};
+```
+
+---
+
+## 2. Add WaypointRunner to the layout
 
 ```tsx
-// Current URL: /contracts/42/invoices/7
-// Step URL template: /contracts/{{CONTRACT_ID}}/invoices/{{INVOICE_ID}}
+// app/onboarding/layout.tsx
+"use client";
 
-const { extractedParams } = useWaypoint();
-// extractedParams → { CONTRACT_ID: 42, INVOICE_ID: 7 }
+import { useRouter } from "next/navigation";
+import { WaypointRunner } from "@waypoint/next";
+import { onboardingSchema } from "@/lib/onboarding.schema";
+
+export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+
+  return (
+    <WaypointRunner
+      schema={onboardingSchema}
+      onStepComplete={async (stepId, stepData) => {
+        // Optional: persist to your backend after each step
+        await fetch(`/api/draft-steps/${stepId}`, {
+          method: "POST",
+          body: JSON.stringify(stepData),
+        });
+      }}
+      onComplete={async (data) => {
+        await fetch("/api/complete-onboarding", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        router.push("/dashboard");
+      }}
+    >
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        {children}
+      </div>
+    </WaypointRunner>
+  );
+}
 ```
 
-## Passing params on navigate
+---
 
-You only need to provide params that are **new** or should **override** the extracted ones:
+## 3. Create step pages
+
+All step pages look the same — `useWaypointStep()` resolves fields from the schema automatically.
 
 ```tsx
-goNext({ NEXT_ID: "new-value" });
-// CONTRACT_ID is automatically carried from the current URL
+// app/onboarding/personal/page.tsx  (same pattern for every step)
+"use client";
+
+import { useWaypointStep } from "@waypoint/next";
+
+export default function PersonalPage() {
+  const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
+    useWaypointStep();
+
+  return (
+    <div className="w-full max-w-md">
+      {/* Progress bar */}
+      <div className="h-1 bg-gray-100 rounded-full mb-8">
+        <div
+          className="h-full bg-blue-500 rounded-full transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-5">
+        {fields.map((field) => (
+          <div key={field.definition.id}>
+            <label className="block text-sm font-medium mb-1">
+              {field.definition.label}
+            </label>
+
+            {field.definition.type === "select" ? (
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                {...form.register(field.definition.id)}
+              >
+                <option value="">Choose…</option>
+                {field.definition.options?.map((opt) => (
+                  <option key={String(opt.value)} value={String(opt.value)}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={field.definition.type}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder={field.definition.placeholder}
+                {...form.register(field.definition.id)}
+              />
+            )}
+
+            {form.formState.errors[field.definition.id] && (
+              <p className="text-red-500 text-xs mt-1">
+                {String(form.formState.errors[field.definition.id]?.message)}
+              </p>
+            )}
+          </div>
+        ))}
+
+        <div className="flex gap-3 mt-2">
+          {!isFirstStep && (
+            <button type="button" onClick={goBack}
+              className="px-4 py-2 border rounded-lg text-sm">
+              ← Back
+            </button>
+          )}
+          <button type="submit"
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium">
+            {isLastStep ? "Finish ✓" : "Continue →"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 ```
 
-## Numeric params
+---
 
-Params whose name ends in `_ID` and whose URL value consists entirely of digits are automatically cast to `number`:
+## 4. Passing external variables
 
-```
-/contracts/{{CONTRACT_ID}}/items → CONTRACT_ID = 42 (number)
-/contracts/{{CONTRACT_TYPE}}/items → CONTRACT_TYPE = "42" (string)
-```
-
-## Validation in dev
-
-In development mode, waypoint logs a warning when navigating with incomplete params:
-
-```
-Waypoint: navigating with incomplete parameters. Missing: INVOICE_ID
-```
-
-## Manual URL building
+If conditions reference `$ext.varId`, pass values via the `externalVars` prop on `WaypointRunner`.
 
 ```tsx
-const { buildUrl, getStepUrl } = useWaypoint();
+"use client";
 
-// Build any URL
-const url = buildUrl("/reports/{{REPORT_ID}}", { REPORT_ID: "monthly" });
+import { useSession } from "next-auth/react";
+import { WaypointRunner } from "@waypoint/next";
 
-// Get URL for a named step
-const profileUrl = getStepUrl("profile", { USER_ID: "99" });
+export default function Layout({ children }) {
+  const { data: session } = useSession();
+
+  return (
+    <WaypointRunner
+      schema={schema}
+      externalVars={{
+        userId: session?.user?.id,
+        plan: session?.user?.plan,
+      }}
+    >
+      {children}
+    </WaypointRunner>
+  );
+}
 ```
+
+`WaypointRunner` syncs `externalVars` into the store whenever the prop changes. The tree re-resolves automatically.
+
+---
+
+## Resume on page reload
+
+With `persistenceMode: "zustand"` in your schema, journey data is persisted to `localStorage` automatically. When the user returns:
+
+1. `WaypointRunner` detects the saved state
+2. Calls `resume()` to restore data without re-initialising
+3. Navigates to the last valid step
+
+No additional code needed.

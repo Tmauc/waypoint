@@ -1,37 +1,111 @@
 ---
-title: History
+title: Tree Resolution
 ---
 
-# History
+import { Callout } from "nextra/components";
 
-Waypoint maintains a `history` array that tracks which steps have been visited, enabling smart back navigation.
+# Tree Resolution
 
-## How history works
+The **resolved tree** is the computed list of steps and fields that are actually visible to the user at a given moment, after evaluating all conditions against the current form data and external variables.
 
-1. When you call `goNext()`, the **current step** is appended to history before navigating forward.
-2. When you call `goBack()`, waypoint finds the most recent step in history that exists in the tree.
-3. If you navigate forward to a different branch than history records, the future portion of history is **pruned** automatically.
-
-## Pruning future history
-
-If the user navigates forward along a different path than what history recorded (e.g. after a conditional branch), the stale future steps are removed:
-
-```
-history: [step1, step2, step3]
-         current: step2
-         goNext → navigates to step4 (not step3)
-         → history becomes: [step1, step2]
-```
-
-## Accessing history
+## resolveTree()
 
 ```ts
-const history = useWaypointStore((s) => s.getJourney("myJourney")?.history);
+import { resolveTree } from "@waypoint/core";
+
+const tree: ResolvedTree = resolveTree(schema, data, externalVars);
 ```
 
-## Resetting
+| Parameter | Type | Description |
+|---|---|---|
+| `schema` | `WaypointSchema` | The journey definition |
+| `data` | `Record<string, Record<string, unknown>>` | Form data: `{ stepId: { fieldId: value } }` |
+| `externalVars` | `Record<string, unknown>` | External variable values |
+
+### ResolvedTree
 
 ```ts
-const { handleRestartNavigation } = useWaypoint();
-handleRestartNavigation(); // clears history, resets currentStep, navigates to start
+interface ResolvedTree {
+  steps: ResolvedStep[];          // visible steps, in order
+  hiddenSteps: ResolvedStep[];    // steps whose visibleWhen evaluated to false
+  missingExternalVars: string[];  // blocking external variables that have no value
+}
+
+interface ResolvedStep {
+  definition: StepDefinition;
+  visible: boolean;
+  fields: ResolvedField[];        // all fields, including hidden ones
+}
+
+interface ResolvedField {
+  definition: FieldDefinition;
+  visible: boolean;               // after evaluating field-level visibleWhen
+  dependenciesMet: boolean;       // all dependsOn paths have a value
+}
+```
+
+<Callout type="info">
+  `resolveTree()` is a **pure function** — it has no side effects and takes no React context. You can call it anywhere: in hooks, server components, tests, or plain scripts.
+</Callout>
+
+## Navigation helpers
+
+After resolving the tree you can navigate it with these helpers:
+
+```ts
+import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypoint/core";
+
+// Next step after currentStepId (undefined if on last step)
+const next = getNextStep(tree.steps, currentStepId);
+
+// Previous step before currentStepId (undefined if on first step)
+const prev = getPreviousStep(tree.steps, currentStepId);
+
+// 0–100 progress based on position in the visible tree
+const pct = calculateProgress(tree.steps, currentStepId);
+
+// Deepest step the user can navigate to given their data
+const lastValid = findLastValidStep(tree.steps, data, externalVars);
+```
+
+## When the tree changes
+
+Conditions are re-evaluated every time data changes. If a user's answer makes a previously hidden step visible — or hides a step they already visited — the tree updates immediately.
+
+`useWaypointStep()` in `@waypoint/next` handles this automatically:
+1. After the user submits a step, the tree is re-resolved with the new data
+2. If the set of visible step IDs changed, `truncateHistoryAt(stepId)` prunes stale forward history
+3. Navigation then proceeds to the first step of the new tree
+
+## Runtime store integration
+
+The runtime store (`createRuntimeStore`) calls `resolveTree` internally via the computed helpers:
+
+```ts
+import { createRuntimeStore, getResolvedTree, getCurrentStep } from "@waypoint/core";
+
+const store = createRuntimeStore();
+store.getState().init(schema);
+
+// Computed (not stored) — always derives from current state
+const tree    = getResolvedTree(store.getState());
+const current = getCurrentStep(store.getState());
+```
+
+These helpers are thin wrappers around `resolveTree()` that read `schema`, `data`, and `externalVars` directly from state.
+
+## Example — tree with hidden step
+
+```ts
+const schema = { /* insurance schema with "senior" step */ };
+
+// User is 30 — "senior" step is hidden
+const tree1 = resolveTree(schema, { basics: { age: 30 } }, {});
+// tree1.steps = [ "basics", "summary" ]
+// tree1.hiddenSteps = [ "senior" ]
+
+// User changed to 70 — "senior" step appears
+const tree2 = resolveTree(schema, { basics: { age: 70 } }, {});
+// tree2.steps = [ "basics", "senior", "summary" ]
+// tree2.hiddenSteps = []
 ```

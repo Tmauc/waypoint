@@ -1,6 +1,6 @@
 {
-  "journey-tree": "Journey Tree",
-  "history": "History",
-  "progress": "Progress",
-  "multi-journey": "Multi-Journey"
+  "journey-tree": "WaypointSchema",
+  "history": "Tree Resolution",
+  "progress": "Conditions",
+  "multi-journey": "Persistence"
 }

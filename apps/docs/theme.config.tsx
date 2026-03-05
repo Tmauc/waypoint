@@ -1,13 +1,13 @@
 import type { DocsThemeConfig } from "nextra-theme-docs";
 
 const config: DocsThemeConfig = {
-  logo: <strong>waypoint</strong>,
+  logo: <strong>◈ waypoint</strong>,
   project: {
-    link: "https://github.com/your-org/waypoint",
+    link: "https://github.com/mauc/waypoint",
   },
-  docsRepositoryBase: "https://github.com/your-org/waypoint/tree/main/apps/docs",
+  docsRepositoryBase: "https://github.com/mauc/waypoint/tree/main/apps/docs",
   footer: {
-    text: "waypoint — MIT License",
+    text: "waypoint — Schema-driven multi-step journeys — MIT License",
   },
   useNextSeoProps() {
     return {

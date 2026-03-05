@@ -1,39 +1,39 @@
 const FEATURES = [
   {
-    icon: "🌿",
-    title: "Journey Trees",
+    icon: "📋",
+    title: "Versioned Schema",
     description:
-      "Define your navigation structure as a declarative tree. Branches, conditions, and sub-journeys all compose naturally.",
+      "Define your entire journey in a portable JSON schema — steps, fields, validation rules and conditions. Export, version-control and share across projects.",
   },
   {
-    icon: "🧭",
-    title: "Smart Navigation",
+    icon: "⚡",
+    title: "Conditional Logic",
     description:
-      "Go to next, previous, or jump directly to any step. The router handles URL updates and history automatically.",
+      "Show or hide steps and fields based on data with a composable AND/OR condition engine. 13 operators, nested groups, external variables.",
   },
   {
     icon: "📊",
     title: "Progress Tracking",
     description:
-      "Built-in progress calculation per journey. Always know where the user is and how far they've come.",
+      "Built-in progress calculation based on the resolved tree. Always reflects the real number of visible steps, not a static count.",
   },
   {
-    icon: "🔀",
-    title: "Multi-Journey",
+    icon: "🔒",
+    title: "Zod Validation",
     description:
-      "Run multiple concurrent journeys with fully isolated state. Perfect for wizard-within-wizard patterns.",
-  },
-  {
-    icon: "🔗",
-    title: "URL Templates",
-    description:
-      "Steps are backed by URL templates with typed parameters. Deep-linking and sharing work out of the box.",
+      "Automatic Zod schema generation from field definitions. Pair with react-hook-form for server-quality validation with zero boilerplate.",
   },
   {
     icon: "⏩",
-    title: "Resume Support",
+    title: "Resume & Persistence",
     description:
-      "Persist journey state and resume exactly where the user left off, even after a page refresh or navigation away.",
+      "Persist journey data to localStorage with Zustand middleware. Deep-link users back to their last valid step on return.",
+  },
+  {
+    icon: "🏗️",
+    title: "No-Code Builder",
+    description:
+      "Drop in <WaypointBuilder> to give your users a visual editor. Build schemas, configure conditions and test journeys without writing code.",
   },
 ];
 

@@ -1,7 +1,6 @@
 {
-  "use-waypoint": "useWaypoint",
-  "use-waypoint-initializer": "useWaypointInitializer",
-  "use-step-waypoint": "useStepWaypoint",
-  "use-waypoint-store": "useWaypointStore",
-  "url-template-engine": "URLTemplateEngine"
+  "use-waypoint": "@waypoint/core",
+  "use-waypoint-initializer": "@waypoint/react",
+  "use-step-waypoint": "@waypoint/next",
+  "use-waypoint-store": "@waypoint/builder"
 }
