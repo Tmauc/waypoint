@@ -1,6 +1,6 @@
 "use client";
 
-import { WaypointBuilder, useBuilderStore } from "@waypoint/builder";
+import { WaypointBuilder, useBuilderStore, DARK_THEME } from "@waypoint/builder";
 import { EXAMPLES } from "./examples";
 
 function ExamplesBar() {
@@ -13,10 +13,10 @@ function ExamplesBar() {
         {EXAMPLES.map((ex) => (
           <button
             key={ex.id}
-            style={{ ...styles.exBtn, borderColor: ex.color }}
+            style={{ ...styles.exBtn, borderColor: `${ex.color}40` }}
             onClick={() => loadSchema(ex.schema)}
           >
-            <span style={{ ...styles.exDot, background: ex.color }} />
+            <span style={{ ...styles.exDot, background: ex.color, boxShadow: `0 0 6px ${ex.color}60` }} />
             <div style={styles.exText}>
               <span style={styles.exLabel}>{ex.label}</span>
               <span style={styles.exDesc}>{ex.description}</span>
@@ -35,14 +35,16 @@ export default function BuilderPage() {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        gap: 0,
-        padding: 16,
+        padding: 12,
         boxSizing: "border-box",
+        gap: 0,
+        background: "#050510",
       }}
     >
       <ExamplesBar />
       <WaypointBuilder
         style={{ flex: 1 }}
+        theme={DARK_THEME}
         onSave={(schema) => {
           console.log("Saved schema:", JSON.stringify(schema, null, 2));
           alert("Schema saved to console!");
@@ -57,18 +59,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     alignItems: "center",
     gap: 12,
-    padding: "10px 16px",
-    background: "#fff",
-    borderBottom: "1px solid #e5e7eb",
+    padding: "8px 4px 10px",
     flexShrink: 0,
     flexWrap: "wrap",
   },
   barLabel: {
     fontSize: 11,
     fontWeight: 700,
-    color: "#9ca3af",
+    color: "rgba(255,255,255,0.2)",
     textTransform: "uppercase",
-    letterSpacing: "0.05em",
+    letterSpacing: "0.07em",
     flexShrink: 0,
   },
   examples: { display: "flex", gap: 8, flexWrap: "wrap" },
@@ -77,19 +77,20 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: 8,
     padding: "6px 12px",
-    border: "1.5px solid",
+    border: "1px solid",
     borderRadius: 8,
-    background: "#fff",
+    background: "rgba(255,255,255,0.03)",
     cursor: "pointer",
     textAlign: "left",
+    transition: "background 150ms",
   },
   exDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: "50%",
     flexShrink: 0,
   },
   exText: { display: "flex", flexDirection: "column" },
-  exLabel: { fontSize: 12, fontWeight: 700, color: "#111827" },
-  exDesc: { fontSize: 10, color: "#9ca3af" },
+  exLabel: { fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.8)" },
+  exDesc: { fontSize: 10, color: "rgba(255,255,255,0.3)" },
 };

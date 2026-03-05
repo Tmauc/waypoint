@@ -9,22 +9,111 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50 font-sans antialiased">
-        <nav className="border-b bg-white px-6 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold tracking-tight text-indigo-600">◈ waypoint</span>
-            <span className="text-gray-300">/</span>
-            <a href="/builder" className="text-sm font-medium text-gray-700 hover:text-gray-900">
-              Builder
-            </a>
-            <span className="text-gray-300">/</span>
-            <a href="/journeys" className="text-sm font-medium text-gray-700 hover:text-gray-900">
-              Journeys
+      <body
+        className="min-h-screen antialiased"
+        style={{
+          background: "#050510",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        }}
+      >
+        <nav
+          style={{
+            background: "#070714",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+            padding: "0 20px",
+            height: 48,
+            display: "flex",
+            alignItems: "center",
+            gap: 0,
+          }}
+        >
+          {/* Logo */}
+          <span
+            style={{
+              fontWeight: 900,
+              fontSize: 15,
+              letterSpacing: "-0.03em",
+              color: "#fff",
+              marginRight: 24,
+            }}
+          >
+            <span style={{ color: "#a78bfa" }}>◈</span>{" "}waypoint
+          </span>
+
+          {/* Separator */}
+          <span style={{ color: "rgba(255,255,255,0.12)", marginRight: 20, fontSize: 18 }}>|</span>
+
+          {/* Nav links */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <NavLink href="/builder" label="Builder" />
+            <NavLink href="/journeys" label="Journeys" />
+          </div>
+
+          {/* Right side */}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.25)",
+              }}
+            >
+              Demo
+            </span>
+            <a
+              href="https://github.com/tmauc/waypoint"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.4)",
+                textDecoration: "none",
+                padding: "4px 10px",
+                borderRadius: 6,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              GitHub
             </a>
           </div>
         </nav>
-        <main className="h-[calc(100vh-49px)]">{children}</main>
+
+        <main style={{ height: "calc(100vh - 48px)" }}>{children}</main>
       </body>
     </html>
+  );
+}
+
+function NavLink({ href, label }: { href: string; label: string }) {
+  return (
+    <a
+      href={href}
+      style={{
+        fontSize: 13,
+        fontWeight: 500,
+        color: "rgba(255,255,255,0.55)",
+        textDecoration: "none",
+        padding: "4px 10px",
+        borderRadius: 6,
+        transition: "color 150ms",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.color = "#fff";
+        (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.06)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.55)";
+        (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+      }}
+    >
+      {label}
+    </a>
   );
 }
