@@ -1,6 +1,12 @@
 import type { DocsThemeConfig } from "nextra-theme-docs";
 
 const config: DocsThemeConfig = {
+  head: (
+    <>
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      <meta name="theme-color" content="#070714" />
+    </>
+  ),
   logo: <strong>◈ waypoint</strong>,
   project: {
     link: "https://github.com/tmauc/waypoint",
