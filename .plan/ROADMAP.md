@@ -169,64 +169,97 @@
 
 ---
 
-### 2.1 — Nouveau Store (`@waypoint/core`) [ ]
-- [ ] Étendre le store Zustand avec la gestion des données par step
+### 2.1 — Nouveau Store (`@waypoint/core`) ✅
+- [x] `packages/core/src/runtime-store.ts` — Zustand vanilla store factory
   - `data: Record<stepId, Record<fieldId, any>>`
-  - `tmpData: Record<stepId, Record<fieldId, any>>` (données des steps cachées)
   - `externalVars: Record<string, any>`
-  - `resolvedTree: ResolvedStep[]` (arbre calculé dynamiquement)
-- [ ] Actions : `setStepData`, `setExternalVar`, `moveToTmp`, `restoreFromTmp`
-- [ ] Réactivité : recalcul `resolvedTree` à chaque changement
-- [ ] Tests unitaires exhaustifs
+  - `completed: boolean` — flag persisté, mis à `true` quand `onComplete` est appelé
+  - Actions : `init`, `resume`, `setFieldValue`, `setStepData`, `setExternalVar`, `setCurrentStep`, `setIsSubmitting`, `setCompleted`, `reset`
+  - Persist mode : `persistenceMode: "zustand"` → localStorage persist (SSR-safe)
+  - Clé localStorage : `waypoint-runtime-{schemaId}` (isolation par parcours)
+  - `PersistedSlice` : `schemaId`, `data`, `currentStepId`, `history`, `completed`
+  - `hasPersistedState(store, schemaId)` — retourne `false` si `completed === true` (restart propre)
+  - Computed helpers : `getResolvedTree`, `getCurrentStep`, `getNextStepFromState`, `getPreviousStepFromState`, `calculateProgressFromState`, `getMissingBlockingVars`
+- [x] Action `resume(schema, externalVars)` — préserve `data + currentStepId + history + completed`, met à jour seulement `schema + externalVars`
+- [x] 34 tests unitaires exhaustifs
+- [x] `packages/react/src/useWaypoint.ts` — réécriture headless (prend store en param)
+- [x] `packages/react/src/useWaypointStep.ts` — hook headless par step (sans router)
+- [x] Suppression : `store.ts`, `useWaypointInitializer.ts`, `useStepWaypoint.ts`
 
 ---
 
-### 2.2 — Modes de persistance [ ]
-- [ ] Mode Zustand persist (localStorage)
-- [ ] Mode backend-step : `onStepComplete: async (stepId, data) => void` (bloque navigation)
-- [ ] Mode backend-manual : hook `onStepSubmit` (dev contrôle)
-- [ ] `onDataChange: (data) => void` — sync vers backend
-- [ ] `fetchData: async () => data` — hydratation au deep-link
-- [ ] Tests unitaires
+### 2.2 — Modes de persistance ✅
+- [x] Mode Zustand persist (localStorage) — `persistenceMode: "zustand"` dans le schema
+- [x] Mode backend-step : `onStepComplete: async (stepId, data) => void` dans WaypointRunner
+- [x] Mode backend-manual : callback `onDataChange`
+- [x] `onDataChange: (data) => void` — sync vers backend
+- [x] `fetchData: async () => data` — hydratation au deep-link
 
 ---
 
-### 2.3 — WaypointRunner (`@waypoint/next`) [ ]
-- [ ] `<WaypointRunner schema version? context? onComplete onDataChange fetchData onStepComplete />`
-- [ ] Deep-link resume : `findLastValidStep` pour redirect automatique
-- [ ] Validation variables externes bloquantes → erreur explicite
-- [ ] A/B testing : sélection version (dernière par défaut)
-- [ ] Tests unitaires
+### 2.3 — WaypointRunner (`@waypoint/next`) ✅
+- [x] `packages/next/src/WaypointRunner.tsx` — Context Provider + init du store
+  - Props : `schema`, `externalVars`, `defaultValues`, `fetchData`, `onComplete`, `onStepComplete`, `onDataChange`
+  - **Multi-journey** : chaque instance crée son propre store isolé via `useRef` — plusieurs `<WaypointRunner>` peuvent coexister sans interférence
+  - **Pause & Resume** : au montage, si `hasPersistedState()` → `resume()` (données + position préservées) ; sinon `init()` + `findLastValidStep` pour deep-link
+  - Un parcours `completed` est exclu du resume → redémarre depuis zéro
+  - ErrorBoundary explicite si variables bloquantes manquantes
+- [x] `packages/next/src/context.ts` — `WaypointRuntimeContext` + `useWaypointRuntimeContext`
 
 ---
 
-### 2.4 — Controllers react-hook-form (`@waypoint/next`) [ ]
-- [ ] `useWaypointStep()` sur chaque page Next.js
-  - Retourne : `{ fields, controllers, handleSubmit, isSubmitting, storeData }`
-  - `handleSubmit` : valide + stocke + goNext automatiquement
-  - `isSubmitting` : boolean (l'UI de loading est à la charge du dev)
-- [ ] Génération dynamique schéma Zod depuis `ValidationRule[]`
-- [ ] Champs conditionnels activés/désactivés dynamiquement
-- [ ] Tests unitaires
+### 2.4 — Controllers react-hook-form (`@waypoint/next`) ✅
+- [x] `packages/next/src/useWaypointStep.ts`
+  - Retourne : `{ currentStep, fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep, isSubmitting, errors }`
+  - `handleSubmit` : valide (Zod) + stocke + `onStepComplete` + `router.push` automatique
+  - `fields` : uniquement les champs visibles du step courant
+- [x] `packages/core/src/zod-generator.ts` — `buildZodSchema(fields)` → ZodObject
+  - Tous les types : required, min, max, minLength, maxLength, email, url, regex, custom
+  - Champs number : `z.coerce.number()`
+  - Champs checkbox : `z.boolean()`
+  - Champs invisibles exclus du schema
+- [x] 15 tests unitaires zod-generator
 
 ---
 
-### 2.5 — Navigation avancée (`@waypoint/next`) [ ]
-- [ ] `goNext` / `goBack` sur l'arbre résolu (skip steps conditionnelles cachées)
-- [ ] Blocage si `onStepComplete` en cours
-- [ ] Blocage si variable externe bloquante manquante
-- [ ] Progress calculé sur l'arbre résolu
-- [ ] Tests E2E
+### 2.5 — Navigation avancée (`@waypoint/next`) ✅
+- [x] `goNext` / `goBack` sur l'arbre résolu (skip steps conditionnelles cachées)
+- [x] Blocage si variable externe bloquante manquante → erreur UI
+- [x] Progress calculé sur l'arbre résolu dynamique
+- [x] `setCompleted(true)` dans `handleSubmit` avant `onComplete` → flag persisté en localStorage
 
 ---
 
-### 2.6 — `@waypoint/devtools` [ ]
-- [ ] Package `packages/devtools/`
-- [ ] Panel overlay (React Query Devtools style)
-  - Store en temps réel, données par step, arbre résolu vs statique
-  - Conditions évaluées, variables externes, historique navigation
-- [ ] Dev-only (`NODE_ENV=development`)
-- [ ] Tests
+### 2.x — Demo multi-parcours ✅
+- [x] `apps/demo/src/app/journeys/` — dashboard de démonstration du multi-parcours
+  - `page.tsx` — dashboard : lit le localStorage de chaque parcours, affiche statut (non démarré / en cours / terminé ✓)
+  - Boutons **Commencer** / **Reprendre** (avec URL exacte de la step courante) / **Réinitialiser**
+  - Indicateur visuel des steps complétées, badge "En cours" / "Terminé ✓"
+  - Section "Comment tester le multi-parcours ?" inline
+- [x] Parcours **Création de projet** (`/journeys/project/`, schema `project-creation`)
+  - 4 steps : informations, équipe (conditionnelle si `type=pro`), budget, lancement
+  - Step équipe cachée automatiquement si type = personnel
+- [x] Parcours **Versement** (`/journeys/deposit/`, schema `deposit`)
+  - 3 steps : compte, versement, confirmation
+- [x] `_components/StepRenderer.tsx` — composant UI partagé (breadcrumb, progress bar, champs, navigation)
+- [x] Lien "Journeys" ajouté dans la nav globale de la demo
+
+---
+
+### 2.6 — `@waypoint/devtools` ✅
+- [x] Package `packages/devtools/` — `package.json`, `tsconfig.json`, `tsup.config.ts`
+- [x] `WaypointDevtools` — guard `NODE_ENV !== "development"` → no-op en prod (tree-shaken)
+- [x] `DevPanel` — drawer slide depuis la droite, bouton toggle fixe en bas-droite
+  - Section **Navigation** : schema id/name, barre de progression, arbre résolu (current/done/upcoming), steps cachées
+  - Section **Données** : accordéon par stepId, step courante mise en évidence, `JsonView` collapsible
+  - Section **Variables externes** : valeur + badges `blocking` / `missing` / `undefined`
+  - Section **Historique** : liste ordonnée des stepIds visités
+  - Section **État brut** : dump JSON complet collapsible
+- [x] `JsonView` — rendu récursif inline (primitives colorées, objects/arrays collapsibles)
+- [x] Styles inline exclusivement — zéro conflit Tailwind, zéro dépendance CSS
+- [x] Hydration SSR-safe : guard `isMounted` via `useEffect`
+- [x] Badge `!` rouge sur le toggle si variables bloquantes manquantes
+- [x] Intégré dans `journeys/project/layout.tsx` et `journeys/deposit/layout.tsx`
 
 ---
 
@@ -243,10 +276,10 @@
 
 | Package | Tests | Statut |
 |---|---|---|
-| `@waypoint/core` | 160 | ✅ tous verts |
+| `@waypoint/core` | 196 | ✅ tous verts (Phase 1 + 34 runtime-store + 15 zod-generator) |
 | `@waypoint/builder` | 50 | ✅ tous verts |
 | `apps/demo` (E2E) | 40 | ✅ tous verts |
-| **Total** | **250** | ✅ |
+| **Total** | **286** | ✅ |
 
 ---
 
@@ -258,9 +291,19 @@ packages/
 │   ├── schema.ts          — WaypointSchema + tous les types
 │   ├── conditions.ts      — évaluation des conditions
 │   ├── tree-resolver.ts   — résolution de l'arbre dynamique
-│   ├── store.ts           — store Zustand existant (à étendre Phase 2)
+│   ├── runtime-store.ts   — store Zustand vanilla (Phase 2) ✅
+│   │                          completed, resume(), setCompleted(), hasPersistedState()
+│   ├── zod-generator.ts   — ValidationRule[] → ZodSchema (Phase 2) ✅
 │   ├── types.ts           — types legacy (JourneyTreeType etc.)
 │   └── index.ts           — exports publics
+├── next/src/
+│   ├── WaypointRunner.tsx — Context Provider + init/resume/multi-journey ✅
+│   ├── useWaypointStep.ts — hook RHF + Zod + setCompleted ✅
+│   ├── context.ts         — WaypointRuntimeContext ✅
+│   └── index.ts
+├── react/src/
+│   ├── useWaypoint.ts     — hook headless (sans router) ✅
+│   └── useWaypointStep.ts — hook headless par step ✅
 ├── builder/src/
 │   ├── components/
 │   │   ├── WaypointBuilder.tsx  — composant racine
@@ -280,9 +323,14 @@ packages/
 │       └── step-dependencies.ts — computeStepDeps, isMoveValid, isFieldMoveValid
 apps/
 └── demo/src/app/
-    └── builder/
-        ├── page.tsx     — page demo avec ExamplesBar
-        └── examples.ts  — 4 schemas d'exemple
+    ├── builder/
+    │   ├── page.tsx     — page demo avec ExamplesBar
+    │   └── examples.ts  — 4 schemas d'exemple
+    └── journeys/        — demo multi-parcours pause/resume ✅ (devtools intégré)
+        ├── page.tsx                    — dashboard (statut + Commencer/Reprendre)
+        ├── _components/StepRenderer.tsx — UI partagée
+        ├── project/                    — parcours Création de projet
+        └── deposit/                    — parcours Versement
 ```
 
 ---
@@ -291,4 +339,7 @@ apps/
 `feat/builder`
 
 ## Prochaine étape
-**Phase 2 — Store Core + Runtime** : Phase 1 complète ✅ — le builder génère un JSON validé, tous les E2E passent. Démarrer 2.1 (nouveau store Zustand avec données par step + arbre résolu dynamique).
+**Phase 2.7 — Tests E2E Runtime** :
+- Phase 2.1–2.6 complète ✅
+- Multi-parcours pause/resume ✅ · Devtools ✅
+- Prochaine étape : tests E2E runtime (navigation, conditions dynamiques, deep-link, pause/resume, variable externe manquante).

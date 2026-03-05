@@ -93,7 +93,7 @@ function makeDefaultSchema(): WaypointSchema {
 // Store
 // ---------------------------------------------------------------------------
 
-export const useBuilderStore = create<BuilderStore>((set, get) => ({
+export const useBuilderStore = create<BuilderStore>((set, _get) => ({
   schema: makeDefaultSchema(),
   selectedStepId: null,
   selectedFieldId: null,

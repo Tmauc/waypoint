@@ -17,6 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/builder" className="text-sm font-medium text-gray-700 hover:text-gray-900">
               Builder
             </a>
+            <span className="text-gray-300">/</span>
+            <a href="/journeys" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+              Journeys
+            </a>
           </div>
         </nav>
         <main className="h-[calc(100vh-49px)]">{children}</main>

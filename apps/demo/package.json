@@ -13,6 +13,7 @@
   "dependencies": {
     "@waypoint/builder": "workspace:*",
     "@waypoint/core": "workspace:*",
+    "@waypoint/devtools": "workspace:*",
     "@waypoint/next": "workspace:*",
     "@waypoint/react": "workspace:*",
     "next": "^14.2.3",
