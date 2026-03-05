@@ -93,26 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 function NavLink({ href, label }: { href: string; label: string }) {
   return (
-    <a
-      href={href}
-      style={{
-        fontSize: 13,
-        fontWeight: 500,
-        color: "rgba(255,255,255,0.55)",
-        textDecoration: "none",
-        padding: "4px 10px",
-        borderRadius: 6,
-        transition: "color 150ms",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.color = "#fff";
-        (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.06)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.55)";
-        (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-      }}
-    >
+    <a href={href} className="nav-link">
       {label}
     </a>
   );
