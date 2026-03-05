@@ -3,9 +3,11 @@ import { useBuilderStore } from "../store/builder-store";
 
 interface ToolbarProps {
   onSave?: (schema: ReturnType<typeof useBuilderStore.getState>["schema"]) => void | Promise<void>;
+  previewMode?: boolean;
+  onTest?: () => void;
 }
 
-export function Toolbar({ onSave }: ToolbarProps) {
+export function Toolbar({ onSave, previewMode, onTest }: ToolbarProps) {
   const { schema, isDirty, resetSchema } = useBuilderStore();
 
   const handleExport = () => {
@@ -45,6 +47,28 @@ export function Toolbar({ onSave }: ToolbarProps) {
     input.click();
   };
 
+  if (previewMode) {
+    return (
+      <div style={styles.toolbar}>
+        <div style={styles.left}>
+          <span style={styles.logo}>◈ waypoint</span>
+          <span style={styles.separator}>/</span>
+          <button
+            style={{ ...styles.btn, ...styles.editBtn }}
+            onClick={onTest}
+          >
+            ← Éditer
+          </button>
+        </div>
+        <div style={styles.right}>
+          <span style={{ fontSize: 12, color: "var(--wp-text-muted)", fontStyle: "italic" }}>
+            Mode aperçu
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={styles.toolbar}>
       <div style={styles.left}>
@@ -65,6 +89,11 @@ export function Toolbar({ onSave }: ToolbarProps) {
       </div>
 
       <div style={styles.right}>
+        {onTest && (
+          <button style={{ ...styles.btn, ...styles.testBtn }} onClick={onTest}>
+            ▶ Tester
+          </button>
+        )}
         <button style={styles.btn} onClick={handleImport}>Import</button>
         <button style={styles.btn} onClick={handleExport}>Export JSON</button>
         {onSave && (
@@ -113,4 +142,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer", fontWeight: 500,
   },
   saveBtn: { background: "var(--wp-primary)", color: "var(--wp-canvas)", border: "1px solid var(--wp-primary)" },
+  testBtn: { background: "var(--wp-success, #22c55e)", color: "#fff", border: "1px solid var(--wp-success, #22c55e)", fontWeight: 600 },
+  editBtn: { background: "transparent", color: "var(--wp-toolbar-text)", border: "none", fontWeight: 600, cursor: "pointer", fontSize: 13, padding: "5px 0" },
 };

@@ -152,6 +152,16 @@
 
 ---
 
+### 1.11 — Mode Preview dans le Builder ✅
+- [x] `packages/builder/package.json` — ajout dépendance `@waypoint/react`
+- [x] `packages/builder/src/components/PreviewPanel.tsx` — split view : liste des steps (✓/→/○/hidden) + renderer de step
+- [x] `packages/builder/src/components/Toolbar.tsx` — bouton "▶ Tester" (mode builder) / "← Éditer" (mode preview)
+- [x] `packages/builder/src/components/WaypointBuilder.tsx` — state `previewMode`, `previewStoreRef`, layout conditionnel
+- Validation inline des champs required, écran "Parcours terminé !", bouton "Recommencer"
+- Steps conditionnelles reflétées en temps réel dans le split view
+
+---
+
 ### Demo — Exemples ✅
 - [x] `apps/demo/src/app/builder/page.tsx` — page builder intégrée
 - [x] `apps/demo/src/app/builder/examples.ts` — 4 exemples :

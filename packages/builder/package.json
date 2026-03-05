@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@waypoint/core": "workspace:*",
+    "@waypoint/react": "workspace:*",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

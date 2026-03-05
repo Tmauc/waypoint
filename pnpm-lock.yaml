@@ -140,6 +140,9 @@ importers:
       '@waypoint/core':
         specifier: workspace:*
         version: link:../core
+      '@waypoint/react':
+        specifier: workspace:*
+        version: link:../react
       zustand:
         specifier: ^4.5.2
         version: 4.5.7(@types/react@18.3.28)(react@18.3.1)
