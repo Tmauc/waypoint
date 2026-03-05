@@ -3,35 +3,23 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Waypoint Demo",
-  description:
-    "Interactive examples for the waypoint journey navigation library",
+  description: "Visual builder for multi-step journey schemas",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50 font-sans antialiased">
-        <nav className="border-b bg-white px-6 py-4">
-          <div className="mx-auto flex max-w-5xl items-center justify-between">
-            <span className="text-xl font-bold tracking-tight">waypoint</span>
-            <div className="flex gap-6 text-sm text-gray-600">
-              <a href="/" className="hover:text-gray-900">
-                Home
-              </a>
-              <a href="/simple-journey" className="hover:text-gray-900">
-                Simple Journey
-              </a>
-              <a href="/multi-journey" className="hover:text-gray-900">
-                Multi Journey
-              </a>
-            </div>
+        <nav className="border-b bg-white px-6 py-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold tracking-tight text-indigo-600">◈ waypoint</span>
+            <span className="text-gray-300">/</span>
+            <a href="/builder" className="text-sm font-medium text-gray-700 hover:text-gray-900">
+              Builder
+            </a>
           </div>
         </nav>
-        <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
+        <main className="h-[calc(100vh-49px)]">{children}</main>
       </body>
     </html>
   );
