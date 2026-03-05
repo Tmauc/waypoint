@@ -10,8 +10,7 @@ export function HeroSection() {
       <div
         className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
         style={{
-          background:
-            "linear-gradient(to bottom, transparent, #050510)",
+          background: "linear-gradient(to bottom, transparent, #050510)",
         }}
       />
 
@@ -97,35 +96,40 @@ export function HeroSection() {
           <span style={{ color: "rgba(255,255,255,0.3)" }}>$</span>
           pnpm add @waypoint/core @waypoint/react
         </div>
+      </div>
 
-        {/* Scroll hint */}
-        <div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
-          style={{ color: "rgba(255,255,255,0.25)" }}
+      {/* Scroll hint — fixed at bottom of section */}
+      <div
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
+        style={{ color: "rgba(255,255,255,0.25)" }}
+      >
+        <span className="text-xs tracking-widest uppercase">Scroll</span>
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            animation: "bounce 2s infinite",
+          }}
         >
-          <span className="text-xs tracking-widest uppercase">Scroll</span>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              animation: "bounce 2s infinite",
-            }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
-        </div>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </div>
 
       <style jsx>{`
         @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(6px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(6px);
+          }
         }
       `}</style>
     </section>
