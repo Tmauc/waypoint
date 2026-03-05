@@ -244,6 +244,31 @@ Built with [pnpm workspaces](https://pnpm.io/workspaces), [Turbo](https://turbo.
 
 ---
 
+## AI Agent Skill
+
+Waypoint ships an [Agent Skill](https://agentskills.io) for Claude Code and other compatible agents. The skill gives your agent full context on the API, patterns, and critical rules — without having to explore the codebase.
+
+**Install via [skills.sh](https://skills.sh):**
+
+```bash
+# Claude Code only
+npx skills add tmauc/waypoint -a claude-code
+
+# All compatible agents
+npx skills add tmauc/waypoint --all
+```
+
+**Or install manually:**
+
+```bash
+# Copy the skill to your Claude skills directory
+cp -r .claude/skills/waypoint ~/.claude/skills/waypoint
+```
+
+The skill lives at [`.claude/skills/waypoint/`](./.claude/skills/waypoint/) in this repo and covers all four packages with detailed API references.
+
+---
+
 ## Development
 
 ```bash
