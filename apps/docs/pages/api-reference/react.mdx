@@ -1,0 +1,178 @@
+---
+title: "@waypoint/react"
+---
+
+import { Callout } from "nextra/components";
+
+# @waypoint/react
+
+Headless React hooks that take a `StoreApi` instance and work with any router.
+
+```bash
+pnpm add @waypoint/react @waypoint/core
+```
+
+<Callout type="info">
+  If you are using Next.js App Router, prefer `@waypoint/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
+</Callout>
+
+---
+
+## useWaypoint()
+
+Access full journey state and actions.
+
+```ts
+import { useWaypoint } from "@waypoint/react";
+import type { StoreApi } from "zustand";
+
+const state = useWaypoint(store);
+```
+
+### Parameter
+
+| Parameter | Type | Description |
+|---|---|---|
+| `store` | `StoreApi<WaypointRuntimeStore>` | Store instance from `createRuntimeStore()` |
+
+### Return value
+
+```ts
+interface WaypointState {
+  schema: WaypointSchema | null;
+  data: Record<string, Record<string, unknown>>;
+  externalVars: Record<string, unknown>;
+  currentStepId: string | null;
+  currentStep: ResolvedStep | undefined;
+  nextStep: ResolvedStep | undefined;
+  previousStep: ResolvedStep | undefined;
+  tree: ResolvedTree;
+  progress: number;             // 0–100
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  isSubmitting: boolean;
+  missingExternalVars: string[];
+
+  // Actions (delegates to store.getState())
+  setFieldValue(stepId: string, fieldId: string, value: unknown): void;
+  setStepData(stepId: string, data: Record<string, unknown>): void;
+  setExternalVar(varId: string, value: unknown): void;
+  setCurrentStep(stepId: string): void;
+  reset(): void;
+}
+```
+
+### Example
+
+```tsx
+import { createRuntimeStore } from "@waypoint/core";
+import { useWaypoint } from "@waypoint/react";
+import { useRef } from "react";
+
+function MyJourneyShell({ schema, children }) {
+  const storeRef = useRef(createRuntimeStore());
+
+  useEffect(() => {
+    storeRef.current.getState().init(schema);
+  }, [schema]);
+
+  const { currentStep, progress, setCurrentStep } = useWaypoint(storeRef.current);
+
+  return (
+    <div>
+      <ProgressBar value={progress} />
+      <h1>{currentStep?.definition.title}</h1>
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+## useWaypointStep()
+
+Access the fields and data for a specific step.
+
+```ts
+import { useWaypointStep } from "@waypoint/react";
+
+const step = useWaypointStep(store, stepId);
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `store` | `StoreApi<WaypointRuntimeStore>` | Store instance |
+| `stepId` | `string` | ID of the step to resolve |
+
+### Return value
+
+```ts
+interface WaypointHeadlessStep {
+  step: ResolvedStep | undefined;
+  fields: ResolvedField[];          // visible fields only
+  stepData: Record<string, unknown>; // current data for this step
+  setFieldValue(fieldId: string, value: unknown): void;
+  setStepData(data: Record<string, unknown>): void;
+}
+```
+
+### Example
+
+```tsx
+function PersonalStep({ store }) {
+  const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
+
+  return (
+    <form>
+      {fields.map((field) => (
+        <input
+          key={field.definition.id}
+          value={(stepData[field.definition.id] as string) ?? ""}
+          onChange={(e) => setFieldValue(field.definition.id, e.target.value)}
+          placeholder={field.definition.placeholder}
+        />
+      ))}
+    </form>
+  );
+}
+```
+
+---
+
+## Usage pattern — headless with custom router
+
+When you need to integrate with a router other than Next.js, build on top of `useWaypoint` and `useWaypointStep`:
+
+```tsx
+import { createRuntimeStore, resolveTree, getNextStep } from "@waypoint/core";
+import { useWaypoint } from "@waypoint/react";
+import { useNavigate } from "react-router-dom";
+
+function WaypointProvider({ schema, children }) {
+  const navigate = useNavigate();
+  const storeRef = useRef(createRuntimeStore());
+
+  useEffect(() => {
+    storeRef.current.getState().init(schema);
+  }, [schema]);
+
+  const { tree, currentStepId } = useWaypoint(storeRef.current);
+
+  function goNext() {
+    const next = getNextStep(tree.steps, currentStepId ?? "");
+    if (next) {
+      storeRef.current.getState().setCurrentStep(next.definition.id);
+      navigate(next.definition.url);
+    }
+  }
+
+  return (
+    <StoreContext.Provider value={{ store: storeRef.current, goNext }}>
+      {children}
+    </StoreContext.Provider>
+  );
+}
+```

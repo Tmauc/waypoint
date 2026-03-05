@@ -5,4 +5,13 @@ const withNextra = require("nextra")({
 
 module.exports = withNextra({
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
+  async redirects() {
+    return [
+      {
+        source: "/api/url-template-engine",
+        destination: "/api/use-waypoint",
+        permanent: true,
+      },
+    ];
+  },
 });
