@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import { HeroSection } from "./HeroSection";
 import { FeaturesSection } from "./FeaturesSection";
 import { CodeSection } from "./CodeSection";
+import { BuilderSection } from "./BuilderSection";
 import { PackagesSection } from "./PackagesSection";
 import { FooterSection } from "./FooterSection";
 
@@ -29,6 +30,7 @@ export function LandingPage() {
 
       <FeaturesSection />
       <CodeSection />
+      <BuilderSection />
       <PackagesSection />
       <FooterSection />
     </div>
