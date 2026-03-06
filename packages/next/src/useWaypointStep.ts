@@ -39,9 +39,13 @@ export interface WaypointStepReturn {
   /** Validate → persist → onStepComplete → navigate next (or onComplete on last step) */
   handleSubmit: () => Promise<void>;
   goBack: () => void;
+  /** Skip this step without validation — only available when step.skippable is true */
+  skipStep: () => void;
 
   // State
   isSubmitting: boolean;
+  /** Whether the current step can be skipped */
+  canSkip: boolean;
   errors: FieldErrors;
 }
 
@@ -61,26 +65,27 @@ export interface WaypointStepReturn {
  * const { form, fields, handleSubmit, progress } = useWaypointStep();
  */
 export function useWaypointStep(): WaypointStepReturn {
-  const { schema, store, onComplete, onStepComplete, onDataChange, externalEnums } =
+  const { schema, store, onComplete, onStepComplete, onDataChange, onStepSkipped, externalEnums } =
     useWaypointRuntimeContext();
   const router = useRouter();
   const pathname = usePathname();
 
   // Subscribe to store state
-  const { data, externalVars, currentStepId, isSubmitting } = useStore(
+  const { data, externalVars, currentStepId, skippedSteps, isSubmitting } = useStore(
     store,
     (s: WaypointRuntimeStore) => ({
       data: s.data,
       externalVars: s.externalVars,
       currentStepId: s.currentStepId,
+      skippedSteps: s.skippedSteps,
       isSubmitting: s.isSubmitting,
     })
   );
 
   // Resolve the full tree
   const tree = useMemo(
-    () => resolveTree(schema, data, externalVars, externalEnums),
-    [schema, data, externalVars, externalEnums]
+    () => resolveTree(schema, data, externalVars, externalEnums, skippedSteps),
+    [schema, data, externalVars, externalEnums, skippedSteps]
   );
 
   // Find the step matching the current pathname
@@ -140,6 +145,9 @@ export function useWaypointStep(): WaypointStepReturn {
     ? calculateProgress(tree.steps, currentStep.definition.id)
     : 0;
 
+  // Whether the current step can be skipped
+  const canSkip = !!currentStep?.definition.skippable;
+
   // goBack
   const goBack = useCallback(() => {
     if (!currentStep) return;
@@ -148,6 +156,30 @@ export function useWaypointStep(): WaypointStepReturn {
       router.push(prev.definition.url);
     }
   }, [currentStep, tree.steps, router]);
+
+  // skipStep — bypass validation, mark as skipped, navigate to next
+  const skipStep = useCallback(() => {
+    if (!currentStep || !currentStep.definition.skippable) return;
+
+    const stepId = currentStep.definition.id;
+    store.getState().skipStep(stepId);
+
+    // Re-resolve tree after marking as skipped (conditions may depend on $step.X.skipped)
+    const updatedTree = resolveTree(schema, store.getState().data, externalVars, externalEnums, [
+      ...skippedSteps,
+      stepId,
+    ]);
+    const nextStep = getNextStep(updatedTree.steps, stepId);
+
+    onStepSkipped?.(stepId);
+
+    if (nextStep) {
+      router.push(nextStep.definition.url);
+    } else {
+      store.getState().setCompleted(true);
+      onComplete?.(store.getState().data);
+    }
+  }, [currentStep, store, schema, externalVars, externalEnums, skippedSteps, onStepSkipped, onComplete, router]);
 
   // handleSubmit
   const handleSubmit = useCallback(async () => {
@@ -169,9 +201,15 @@ export function useWaypointStep(): WaypointStepReturn {
       // 4. Write validated data into the store
       store.getState().setStepData(currentStep.definition.id, values);
 
+      // 4b. If this step was previously skipped, un-skip it (user filled it properly)
+      if (skippedSteps.includes(currentStep.definition.id)) {
+        store.getState().unskipStep(currentStep.definition.id);
+      }
+
       // 5. Re-resolve tree with updated data — step visibility may have changed
       const allData = store.getState().data;
-      const updatedTree = resolveTree(schema, allData, externalVars, externalEnums);
+      const updatedSkipped = store.getState().skippedSteps;
+      const updatedTree = resolveTree(schema, allData, externalVars, externalEnums, updatedSkipped);
       const newVisibleIds = updatedTree.steps.map((s) => s.definition.id).join(",");
 
       // 6. If the visible tree changed, truncate stale forward history
@@ -207,6 +245,7 @@ export function useWaypointStep(): WaypointStepReturn {
     tree.steps,
     externalVars,
     externalEnums,
+    skippedSteps,
     onDataChange,
     onStepComplete,
     onComplete,
@@ -222,7 +261,9 @@ export function useWaypointStep(): WaypointStepReturn {
     fields: visibleFields,
     handleSubmit,
     goBack,
+    skipStep,
     isSubmitting,
+    canSkip,
     errors: form.formState.errors,
   };
 }

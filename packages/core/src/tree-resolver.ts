@@ -101,13 +101,14 @@ export function resolveTree(
   schema: WaypointSchema,
   data: JourneyData,
   externalVars: ExternalVars,
-  externalEnums?: ExternalEnum[]
+  externalEnums?: ExternalEnum[],
+  skippedSteps?: string[]
 ): ResolvedTree {
   const visibleSteps: ResolvedStep[] = [];
   const hiddenSteps: ResolvedStep[] = [];
 
   for (const stepDef of schema.steps) {
-    const stepVisible = isVisible(stepDef.visibleWhen, data, externalVars, externalEnums);
+    const stepVisible = isVisible(stepDef.visibleWhen, data, externalVars, externalEnums, skippedSteps);
 
     const resolvedFields: ResolvedField[] = stepDef.fields.map((fieldDef) => {
       let resolvedOptions: SelectOption[] | undefined;
@@ -117,7 +118,7 @@ export function resolveTree(
       }
       return {
         definition: fieldDef,
-        visible: isVisible(fieldDef.visibleWhen, data, externalVars, externalEnums),
+        visible: isVisible(fieldDef.visibleWhen, data, externalVars, externalEnums, skippedSteps),
         dependenciesMet: areDependenciesMet(fieldDef.dependsOn, data, externalVars),
         resolvedOptions,
       };

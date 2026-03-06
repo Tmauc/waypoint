@@ -33,6 +33,8 @@ export interface WaypointRunnerProps {
   ) => void | Promise<void>;
   /** Called whenever any field value changes */
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  /** Called when the user skips a step */
+  onStepSkipped?: (stepId: string) => void;
   /** App-provided custom field types — exposed via context for custom field rendering */
   customFieldTypes?: CustomTypeDefinition[];
   /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions */
@@ -80,6 +82,7 @@ export function WaypointRunner({
   onComplete,
   onStepComplete,
   onDataChange,
+  onStepSkipped,
   customFieldTypes,
   externalEnums,
   children,
@@ -189,6 +192,7 @@ export function WaypointRunner({
       onComplete,
       onStepComplete,
       onDataChange,
+      onStepSkipped,
       customFieldTypes,
       externalEnums,
     }),

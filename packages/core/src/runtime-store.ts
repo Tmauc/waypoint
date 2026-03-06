@@ -23,6 +23,8 @@ export interface WaypointRuntimeState {
   currentStepId: string | null;
   /** Step IDs visited in order */
   history: string[];
+  /** Step IDs that have been skipped by the user */
+  skippedSteps: string[];
   isSubmitting: boolean;
   /** True once onComplete has been called (all steps validated) */
   completed: boolean;
@@ -55,6 +57,10 @@ export interface WaypointRuntimeActions {
   setCurrentStep(stepId: string): void;
   setIsSubmitting(b: boolean): void;
   setCompleted(b: boolean): void;
+  /** Marks a step as skipped (user chose to bypass it) */
+  skipStep(stepId: string): void;
+  /** Removes a step from the skipped list (e.g. when user goes back and fills it) */
+  unskipStep(stepId: string): void;
   /**
    * Truncates history to include only steps up to and including stepId.
    * Called before navigating forward so stale steps from a previous path are removed.
@@ -75,6 +81,7 @@ interface PersistedSlice {
   data: WaypointRuntimeState["data"];
   currentStepId: WaypointRuntimeState["currentStepId"];
   history: WaypointRuntimeState["history"];
+  skippedSteps: WaypointRuntimeState["skippedSteps"];
   completed: WaypointRuntimeState["completed"];
 }
 
@@ -86,7 +93,7 @@ export function getResolvedTree(state: WaypointRuntimeState): ResolvedTree {
   if (!state.schema) {
     return { steps: [], hiddenSteps: [], missingExternalVars: [] };
   }
-  return resolveTree(state.schema, state.data, state.externalVars);
+  return resolveTree(state.schema, state.data, state.externalVars, undefined, state.skippedSteps);
 }
 
 export function getCurrentStep(state: WaypointRuntimeState): ResolvedStep | undefined {
@@ -128,6 +135,7 @@ const initialState: WaypointRuntimeState = {
   externalVars: {},
   currentStepId: null,
   history: [],
+  skippedSteps: [],
   isSubmitting: false,
   completed: false,
 };
@@ -161,6 +169,7 @@ function buildStateCreator() {
         externalVars,
         currentStepId: firstStepId,
         history: firstStepId ? [firstStepId] : [],
+        skippedSteps: [],
         isSubmitting: false,
         completed: false,
       });
@@ -211,6 +220,20 @@ function buildStateCreator() {
 
     setCompleted(b) {
       set({ completed: b });
+    },
+
+    skipStep(stepId) {
+      set((state) => ({
+        skippedSteps: state.skippedSteps.includes(stepId)
+          ? state.skippedSteps
+          : [...state.skippedSteps, stepId],
+      }));
+    },
+
+    unskipStep(stepId) {
+      set((state) => ({
+        skippedSteps: state.skippedSteps.filter((id) => id !== stepId),
+      }));
     },
 
     truncateHistoryAt(stepId) {
@@ -265,6 +288,7 @@ export function createRuntimeStore(options: CreateRuntimeStoreOptions = {}) {
           data: state.data,
           currentStepId: state.currentStepId,
           history: state.history,
+          skippedSteps: state.skippedSteps,
           completed: state.completed,
         }),
       })

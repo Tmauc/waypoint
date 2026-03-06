@@ -158,6 +158,8 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
     form,
     handleSubmit,
     goBack,
+    skipStep,
+    canSkip,
     progress,
     isFirstStep,
     isLastStep,
@@ -285,27 +287,49 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
               </Link>
             )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={{
-                padding: "8px 22px",
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#fff",
-                background: "rgba(167,139,250,0.2)",
-                border: "1px solid rgba(167,139,250,0.35)",
-                borderRadius: 8,
-                cursor: isSubmitting ? "not-allowed" : "pointer",
-                opacity: isSubmitting ? 0.6 : 1,
-              }}
-            >
-              {isSubmitting
-                ? "Enregistrement…"
-                : isLastStep
-                ? "Terminer ✓"
-                : "Continuer →"}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {canSkip && (
+                <button
+                  type="button"
+                  onClick={skipStep}
+                  disabled={isSubmitting}
+                  style={{
+                    padding: "8px 16px",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "rgba(255,255,255,0.4)",
+                    background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 8,
+                    cursor: isSubmitting ? "not-allowed" : "pointer",
+                    opacity: isSubmitting ? 0.6 : 1,
+                  }}
+                >
+                  Passer
+                </button>
+              )}
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  padding: "8px 22px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: "rgba(167,139,250,0.2)",
+                  border: "1px solid rgba(167,139,250,0.35)",
+                  borderRadius: 8,
+                  cursor: isSubmitting ? "not-allowed" : "pointer",
+                  opacity: isSubmitting ? 0.6 : 1,
+                }}
+              >
+                {isSubmitting
+                  ? "Enregistrement…"
+                  : isLastStep
+                  ? "Terminer ✓"
+                  : "Continuer →"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

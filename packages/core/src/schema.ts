@@ -154,6 +154,8 @@ export interface StepDefinition {
   visibleWhen?: ConditionGroup;
   /** Whether this step can be used as a resume point */
   enableResumeFromHere?: boolean;
+  /** Whether the user can skip this step without filling required fields */
+  skippable?: boolean;
 }
 
 // ---------------------------------------------------------------------------

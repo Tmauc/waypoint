@@ -17,6 +17,8 @@ export interface WaypointRuntimeContextValue {
     data: Record<string, unknown>
   ) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  /** Called when the user skips a step */
+  onStepSkipped?: (stepId: string) => void;
   /** App-provided custom field types — available for rendering custom fields */
   customFieldTypes?: CustomTypeDefinition[];
   /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions by the tree resolver */

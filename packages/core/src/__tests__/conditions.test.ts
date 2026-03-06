@@ -55,6 +55,18 @@ describe("resolveFieldValue", () => {
   it("returns undefined for path with no dot", () => {
     expect(resolveFieldValue("nodot", data, externalVars)).toBeUndefined();
   });
+
+  it("resolves $step.stepId.skipped to true when step is skipped", () => {
+    expect(resolveFieldValue("$step.personal.skipped", data, externalVars, ["personal"])).toBe(true);
+  });
+
+  it("resolves $step.stepId.skipped to false when step is not skipped", () => {
+    expect(resolveFieldValue("$step.personal.skipped", data, externalVars, ["billing"])).toBe(false);
+  });
+
+  it("resolves $step.stepId.skipped to false when skippedSteps is undefined", () => {
+    expect(resolveFieldValue("$step.personal.skipped", data, externalVars)).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -398,5 +410,14 @@ describe("isVisible", () => {
     };
     expect(isVisible(condition, data, externalVars, enums)).toBe(true);
     expect(isVisible(condition, data, externalVars)).toBe(false); // no enums → false
+  });
+
+  it("supports $step.X.skipped path", () => {
+    const condition: ConditionGroup = {
+      combinator: "and",
+      rules: [{ field: "$step.personal.skipped", operator: "equals", value: true }],
+    };
+    expect(isVisible(condition, data, externalVars, undefined, ["personal"])).toBe(true);
+    expect(isVisible(condition, data, externalVars, undefined, [])).toBe(false);
   });
 });

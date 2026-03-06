@@ -458,6 +458,87 @@ describe("truncateHistoryAt", () => {
 });
 
 // ---------------------------------------------------------------------------
+// skipStep / unskipStep
+// ---------------------------------------------------------------------------
+
+describe("skipStep", () => {
+  it("adds a step to skippedSteps", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step2");
+
+    expect(store.getState().skippedSteps).toEqual(["step2"]);
+  });
+
+  it("does not duplicate entries", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step2");
+    store.getState().skipStep("step2");
+
+    expect(store.getState().skippedSteps).toEqual(["step2"]);
+  });
+
+  it("allows multiple steps to be skipped", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step1");
+    store.getState().skipStep("step2");
+
+    expect(store.getState().skippedSteps).toEqual(["step1", "step2"]);
+  });
+});
+
+describe("unskipStep", () => {
+  it("removes a step from skippedSteps", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step1");
+    store.getState().skipStep("step2");
+    store.getState().unskipStep("step1");
+
+    expect(store.getState().skippedSteps).toEqual(["step2"]);
+  });
+
+  it("is a no-op if step was not skipped", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().unskipStep("step1");
+
+    expect(store.getState().skippedSteps).toEqual([]);
+  });
+});
+
+describe("skippedSteps in init/reset", () => {
+  it("init resets skippedSteps", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step1");
+    store.getState().init(simpleSchema);
+
+    expect(store.getState().skippedSteps).toEqual([]);
+  });
+
+  it("reset clears skippedSteps", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step1");
+    store.getState().reset();
+
+    expect(store.getState().skippedSteps).toEqual([]);
+  });
+
+  it("resume preserves skippedSteps", () => {
+    const store = createRuntimeStore();
+    store.getState().init(simpleSchema);
+    store.getState().skipStep("step1");
+    store.getState().resume(simpleSchema);
+
+    expect(store.getState().skippedSteps).toEqual(["step1"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // resume
 // ---------------------------------------------------------------------------
 

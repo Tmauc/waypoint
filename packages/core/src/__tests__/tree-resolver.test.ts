@@ -499,3 +499,56 @@ describe("resolveTree — external enums", () => {
     expect(countryField?.definition.externalEnumId).toBe("countries");
   });
 });
+
+// ---------------------------------------------------------------------------
+// resolveTree — skippedSteps
+// ---------------------------------------------------------------------------
+
+describe("resolveTree — skippedSteps", () => {
+  const skippableSchema: WaypointSchema = {
+    version: "1",
+    id: "skip-test",
+    name: "Skip Test",
+    steps: [
+      {
+        id: "step1",
+        title: "Step 1",
+        url: "/step1",
+        skippable: true,
+        fields: [{ id: "name", type: "text", label: "Name" }],
+      },
+      {
+        id: "step2",
+        title: "Step 2 (conditional on step1 skipped)",
+        url: "/step2",
+        visibleWhen: {
+          combinator: "and",
+          rules: [{ field: "$step.step1.skipped", operator: "equals", value: true }],
+        },
+        fields: [{ id: "alt", type: "text", label: "Alt" }],
+      },
+      {
+        id: "step3",
+        title: "Step 3",
+        url: "/step3",
+        fields: [],
+      },
+    ],
+  };
+
+  it("step2 is hidden when step1 is not skipped", () => {
+    const tree = resolveTree(skippableSchema, {}, emptyVars, undefined, []);
+    const visibleIds = tree.steps.map((s) => s.definition.id);
+    expect(visibleIds).toContain("step1");
+    expect(visibleIds).not.toContain("step2");
+    expect(visibleIds).toContain("step3");
+  });
+
+  it("step2 becomes visible when step1 is skipped", () => {
+    const tree = resolveTree(skippableSchema, {}, emptyVars, undefined, ["step1"]);
+    const visibleIds = tree.steps.map((s) => s.definition.id);
+    expect(visibleIds).toContain("step1");
+    expect(visibleIds).toContain("step2");
+    expect(visibleIds).toContain("step3");
+  });
+});

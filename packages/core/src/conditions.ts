@@ -22,17 +22,24 @@ export type ExternalVars = Record<string, unknown>;
 
 /**
  * Resolves a field path to its value from the data context.
- * - "stepId.fieldId"  → journey data
- * - "$ext.varId"      → external variable
+ * - "stepId.fieldId"       → journey data
+ * - "$ext.varId"           → external variable
+ * - "$step.stepId.skipped" → whether the step was skipped (boolean)
  */
 export function resolveFieldValue(
   path: string,
   data: JourneyData,
-  externalVars: ExternalVars
+  externalVars: ExternalVars,
+  skippedSteps?: string[]
 ): unknown {
   if (path.startsWith("$ext.")) {
     const varId = path.slice(5);
     return externalVars[varId];
+  }
+
+  if (path.startsWith("$step.") && path.endsWith(".skipped")) {
+    const stepId = path.slice(6, -8); // "$step.".length=6, ".skipped".length=8
+    return skippedSteps?.includes(stepId) ?? false;
   }
 
   const dotIndex = path.indexOf(".");
@@ -130,9 +137,10 @@ function evaluateRule(
   rule: ConditionRule,
   data: JourneyData,
   externalVars: ExternalVars,
-  externalEnums?: ExternalEnum[]
+  externalEnums?: ExternalEnum[],
+  skippedSteps?: string[]
 ): boolean {
-  const actual = resolveFieldValue(rule.field, data, externalVars);
+  const actual = resolveFieldValue(rule.field, data, externalVars, skippedSteps);
 
   if ((rule.operator === "inEnum" || rule.operator === "notInEnum") && externalEnums) {
     const enumDef = externalEnums.find((e) => e.id === String(rule.value));
@@ -153,14 +161,15 @@ export function evaluateConditionGroup(
   group: ConditionGroup,
   data: JourneyData,
   externalVars: ExternalVars,
-  externalEnums?: ExternalEnum[]
+  externalEnums?: ExternalEnum[],
+  skippedSteps?: string[]
 ): boolean {
   const ruleResults = group.rules.map((rule) =>
-    evaluateRule(rule, data, externalVars, externalEnums)
+    evaluateRule(rule, data, externalVars, externalEnums, skippedSteps)
   );
 
   const groupResults = (group.groups ?? []).map((subGroup) =>
-    evaluateConditionGroup(subGroup, data, externalVars, externalEnums)
+    evaluateConditionGroup(subGroup, data, externalVars, externalEnums, skippedSteps)
   );
 
   const allResults = [...ruleResults, ...groupResults];
@@ -180,8 +189,9 @@ export function isVisible(
   visibleWhen: ConditionGroup | undefined,
   data: JourneyData,
   externalVars: ExternalVars,
-  externalEnums?: ExternalEnum[]
+  externalEnums?: ExternalEnum[],
+  skippedSteps?: string[]
 ): boolean {
   if (!visibleWhen) return true;
-  return evaluateConditionGroup(visibleWhen, data, externalVars, externalEnums);
+  return evaluateConditionGroup(visibleWhen, data, externalVars, externalEnums, skippedSteps);
 }

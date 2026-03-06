@@ -73,6 +73,22 @@ export function StepEditor() {
           </label>
         </div>
 
+        {/* Skippable */}
+        <div style={styles.checkRow}>
+          <input
+            type="checkbox"
+            id={`skippable-${step.id}`}
+            checked={!!step.skippable}
+            disabled={readOnly}
+            onChange={readOnly ? undefined : (e) =>
+              updateStep(step.id, { skippable: e.target.checked || undefined })
+            }
+          />
+          <label htmlFor={`skippable-${step.id}`} style={styles.checkLabel}>
+            Skippable (user can bypass this step)
+          </label>
+        </div>
+
         <div style={styles.divider} />
 
         {/* Visibility condition — summary */}

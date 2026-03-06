@@ -29,11 +29,15 @@ export interface WaypointState {
   isLastStep: boolean;
   isSubmitting: boolean;
   missingExternalVars: string[];
+  /** Step IDs that have been skipped */
+  skippedSteps: string[];
   // Store actions
   setFieldValue(stepId: string, fieldId: string, value: unknown): void;
   setStepData(stepId: string, data: Record<string, unknown>): void;
   setExternalVar(varId: string, value: unknown): void;
   setCurrentStep(stepId: string): void;
+  skipStep(stepId: string): void;
+  unskipStep(stepId: string): void;
   reset(): void;
 }
 
@@ -51,13 +55,14 @@ export interface WaypointState {
  * const { currentStep, progress, setFieldValue } = useWaypoint(store);
  */
 export function useWaypoint(store: StoreApi<WaypointRuntimeStore>, externalEnums?: ExternalEnum[]): WaypointState {
-  const { schema, data, externalVars, currentStepId, isSubmitting } = useStore(
+  const { schema, data, externalVars, currentStepId, skippedSteps, isSubmitting } = useStore(
     store,
     (s: WaypointRuntimeStore) => ({
       schema: s.schema,
       data: s.data,
       externalVars: s.externalVars,
       currentStepId: s.currentStepId,
+      skippedSteps: s.skippedSteps,
       isSubmitting: s.isSubmitting,
     })
   );
@@ -65,9 +70,9 @@ export function useWaypoint(store: StoreApi<WaypointRuntimeStore>, externalEnums
   const tree = useMemo(
     () =>
       schema
-        ? resolveTree(schema, data, externalVars, externalEnums)
+        ? resolveTree(schema, data, externalVars, externalEnums, skippedSteps)
         : { steps: [], hiddenSteps: [], missingExternalVars: [] },
-    [schema, data, externalVars, externalEnums]
+    [schema, data, externalVars, externalEnums, skippedSteps]
   );
 
   const currentStep = useMemo(
@@ -110,6 +115,7 @@ export function useWaypoint(store: StoreApi<WaypointRuntimeStore>, externalEnums
     isLastStep: !nextStep,
     isSubmitting,
     missingExternalVars: tree.missingExternalVars,
+    skippedSteps,
 
     setFieldValue: (stepId, fieldId, value) =>
       store.getState().setFieldValue(stepId, fieldId, value),
@@ -118,6 +124,8 @@ export function useWaypoint(store: StoreApi<WaypointRuntimeStore>, externalEnums
     setExternalVar: (varId, value) =>
       store.getState().setExternalVar(varId, value),
     setCurrentStep: (stepId) => store.getState().setCurrentStep(stepId),
+    skipStep: (stepId) => store.getState().skipStep(stepId),
+    unskipStep: (stepId) => store.getState().unskipStep(stepId),
     reset: () => store.getState().reset(),
   };
 }

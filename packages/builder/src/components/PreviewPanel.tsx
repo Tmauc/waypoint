@@ -66,8 +66,11 @@ export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps
     // 2. Snapshot old step IDs
     const oldIds = tree.steps.map((s) => s.definition.id).join(",");
 
-    // 3. Save current step data
+    // 3. Save current step data + un-skip if previously skipped
     store.getState().setStepData(stepId, stepData);
+    if ((store.getState().skippedSteps ?? []).includes(stepId)) {
+      store.getState().unskipStep(stepId);
+    }
 
     // 4. Re-resolve tree with new data
     const newData = store.getState().data;
@@ -116,6 +119,7 @@ export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps
             tree={tree}
             currentIdx={currentIdx}
             onSelect={(id) => store.getState().setCurrentStep(id)}
+            skippedStepIds={store.getState().skippedSteps}
           />
           {extVarDefs.length > 0 && (
             <MockVarPanel
@@ -206,9 +210,28 @@ export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps
                 ← Précédent
               </button>
             )}
-            <button style={{ ...styles.primaryBtn, marginLeft: "auto" }} onClick={handleNext}>
-              {getNextStep(tree.steps, stepId) ? "Continuer →" : "Terminer ✓"}
-            </button>
+            <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              {currentStep?.definition.skippable && (
+                <button
+                  style={styles.secondaryBtn}
+                  onClick={() => {
+                    setErrors({});
+                    store.getState().skipStep(stepId);
+                    const next = getNextStep(tree.steps, stepId);
+                    if (next) {
+                      store.getState().setCurrentStep(next.definition.id);
+                    } else {
+                      setDone(true);
+                    }
+                  }}
+                >
+                  Passer
+                </button>
+              )}
+              <button style={styles.primaryBtn} onClick={handleNext}>
+                {getNextStep(tree.steps, stepId) ? "Continuer →" : "Terminer ✓"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -226,7 +249,8 @@ interface StepListProps {
   onSelect: (id: string) => void;
 }
 
-function StepList({ tree, currentIdx, onSelect }: StepListProps) {
+function StepList({ tree, currentIdx, onSelect, skippedStepIds }: StepListProps & { skippedStepIds?: string[] }) {
+  const skipped = new Set(skippedStepIds ?? []);
   const allSteps = [
     ...tree.steps.map((s) => ({ ...s, hidden: false })),
     ...tree.hiddenSteps.map((s) => ({ ...s, hidden: true })),
@@ -236,11 +260,13 @@ function StepList({ tree, currentIdx, onSelect }: StepListProps) {
     <div style={styles.stepList}>
       <div style={styles.stepListTitle}>Étapes</div>
       {allSteps.map((step) => {
-        const isVisible = !step.hidden;
+        const isStepVisible = !step.hidden;
         const visIdx = tree.steps.findIndex((s) => s.definition.id === step.definition.id);
-        let status: "done" | "current" | "upcoming" | "hidden" = "hidden";
-        if (isVisible) {
-          if (visIdx < currentIdx) status = "done";
+        const isSkipped = skipped.has(step.definition.id);
+        let status: "done" | "current" | "upcoming" | "hidden" | "skipped" = "hidden";
+        if (isStepVisible) {
+          if (isSkipped && visIdx < currentIdx) status = "skipped";
+          else if (visIdx < currentIdx) status = "done";
           else if (visIdx === currentIdx) status = "current";
           else status = "upcoming";
         }
@@ -252,20 +278,23 @@ function StepList({ tree, currentIdx, onSelect }: StepListProps) {
               ...styles.stepItem,
               ...(status === "current" ? styles.stepItemCurrent : {}),
               ...(status === "hidden" ? styles.stepItemHidden : {}),
-              cursor: status === "done" ? "pointer" : "default",
+              ...(status === "skipped" ? { opacity: 0.6 } : {}),
+              cursor: status === "done" || status === "skipped" ? "pointer" : "default",
             }}
             onClick={() => {
-              if (status === "done") onSelect(step.definition.id);
+              if (status === "done" || status === "skipped") onSelect(step.definition.id);
             }}
           >
             <span style={styles.stepStatus}>
               {status === "done" && "✓"}
+              {status === "skipped" && "⏭"}
               {status === "current" && "→"}
               {status === "upcoming" && "○"}
               {status === "hidden" && "–"}
             </span>
             <span style={styles.stepName}>{step.definition.title}</span>
             {status === "hidden" && <span style={styles.hiddenBadge}>hidden</span>}
+            {status === "skipped" && <span style={{ ...styles.hiddenBadge, color: "var(--wp-warning)", background: "var(--wp-warning-bg)" }}>skipped</span>}
           </div>
         );
       })}
