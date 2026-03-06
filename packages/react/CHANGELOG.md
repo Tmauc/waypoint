@@ -1,5 +1,13 @@
 # @waypointjs/react
 
+## 0.1.4
+
+### Patch Changes
+
+- @waypointjs/builder — Added mobile-responsive layout: tab-based navigation (Steps / Fields
+- Updated dependencies
+  - @waypointjs/core@0.1.4
+
 ## 0.1.3
 
 ### Patch Changes
