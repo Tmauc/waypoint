@@ -11,11 +11,6 @@ const BranchCanvas = dynamic(
   { ssr: false }
 );
 
-const ScrollPathCanvas = dynamic(
-  () => import("./ScrollPathCanvas").then((m) => ({ default: m.ScrollPathCanvas })),
-  { ssr: false }
-);
-
 export function LandingPage() {
   return (
     <div
@@ -27,10 +22,8 @@ export function LandingPage() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* Fixed 3D canvas — fractal tree, behind everything */}
+      {/* Fixed 3D canvas — visible behind all sections */}
       <BranchCanvas />
-      {/* Scroll-driven vine — screen blend, grows as user scrolls */}
-      <ScrollPathCanvas />
 
       {/* Skip to main content — keyboard navigation */}
       <a
@@ -60,8 +53,8 @@ export function LandingPage() {
         Skip to main content
       </a>
 
-      {/* Page content — no stacking context, lets children z-index into root */}
-      <div style={{ position: "relative" }}>
+      {/* Page content — above the canvas */}
+      <div style={{ position: "relative", zIndex: 1 }}>
         <HeroSection />
         <main id="main-content">
           <FeaturesSection />
