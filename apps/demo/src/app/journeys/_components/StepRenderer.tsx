@@ -42,8 +42,8 @@ function Field({
   if (type === "select") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
-        <select {...register(id)} style={{ ...style, colorScheme: "dark" }}>
+        <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
+        <select id={id} {...register(id)} style={{ ...style, colorScheme: "dark" }}>
           <option value="">— Sélectionner —</option>
           {options?.map((o) => (
             <option key={String(o.value)} value={String(o.value)}>
