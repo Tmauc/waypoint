@@ -31,7 +31,7 @@ const PACKAGES = [
 
 export function PackagesSection() {
   return (
-    <section className="py-24 px-6" style={{ background: "#070714" }}>
+    <section className="py-24 px-6" style={{ background: "rgba(7,7,20,0.88)" }}>
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <h2

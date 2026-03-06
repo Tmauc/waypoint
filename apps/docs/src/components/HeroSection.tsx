@@ -6,15 +6,6 @@ export function HeroSection() {
       className="relative flex flex-col items-center justify-center text-center px-6"
       style={{ minHeight: "100vh" }}
     >
-      {/* Gradient fade at bottom — decorative */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
-        style={{
-          background: "linear-gradient(to bottom, transparent, #050510)",
-        }}
-      />
-
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-6 max-w-4xl mx-auto">
         {/* Badge */}

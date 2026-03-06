@@ -1,6 +1,6 @@
 export function CodeSection() {
   return (
-    <section className="py-24 px-6" style={{ background: "#050510" }}>
+    <section className="py-24 px-6" style={{ background: "rgba(5,5,16,0.88)" }}>
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <h2

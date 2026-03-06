@@ -6,8 +6,13 @@ import { BuilderSection } from "./BuilderSection";
 import { PackagesSection } from "./PackagesSection";
 import { FooterSection } from "./FooterSection";
 
-const WaypointScene = dynamic(
-  () => import("./WaypointScene").then((m) => ({ default: m.WaypointScene })),
+const BranchCanvas = dynamic(
+  () => import("./BranchCanvas").then((m) => ({ default: m.BranchCanvas })),
+  { ssr: false }
+);
+
+const ScrollPathCanvas = dynamic(
+  () => import("./ScrollPathCanvas").then((m) => ({ default: m.ScrollPathCanvas })),
   { ssr: false }
 );
 
@@ -22,6 +27,11 @@ export function LandingPage() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
+      {/* Fixed 3D canvas — fractal tree, behind everything */}
+      <BranchCanvas />
+      {/* Scroll-driven vine — screen blend, grows as user scrolls */}
+      <ScrollPathCanvas />
+
       {/* Skip to main content — keyboard navigation */}
       <a
         href="#main-content"
@@ -49,19 +59,18 @@ export function LandingPage() {
       >
         Skip to main content
       </a>
-      {/* Hero with 3D canvas */}
-      <div className="relative" style={{ height: "100vh" }}>
-        <WaypointScene />
-        <HeroSection />
-      </div>
 
-      <main id="main-content">
-        <FeaturesSection />
-        <CodeSection />
-        <BuilderSection />
-        <PackagesSection />
-      </main>
-      <FooterSection />
+      {/* Page content — no stacking context, lets children z-index into root */}
+      <div style={{ position: "relative" }}>
+        <HeroSection />
+        <main id="main-content">
+          <FeaturesSection />
+          <CodeSection />
+          <BuilderSection />
+          <PackagesSection />
+        </main>
+        <FooterSection />
+      </div>
     </div>
   );
 }

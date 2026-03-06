@@ -6,7 +6,7 @@ export function FooterSection() {
       className="py-16 px-6"
       style={{
         borderTop: "1px solid rgba(255,255,255,0.07)",
-        background: "#050510",
+        background: "rgba(5,5,16,0.94)",
       }}
     >
       <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-8">

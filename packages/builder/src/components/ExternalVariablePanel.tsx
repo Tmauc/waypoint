@@ -17,14 +17,24 @@ interface FormState {
   blocking: boolean;
 }
 
-const BLANK_FORM: FormState = { id: "", label: "", type: "string", blocking: false };
+const BLANK_FORM: FormState = {
+  id: "",
+  label: "",
+  type: "string",
+  blocking: false,
+};
 
 // ---------------------------------------------------------------------------
 // ExternalVariablePanel
 // ---------------------------------------------------------------------------
 
 export function ExternalVariablePanel() {
-  const { schema, addExternalVariable, updateExternalVariable, removeExternalVariable } = useBuilderStore();
+  const {
+    schema,
+    addExternalVariable,
+    updateExternalVariable,
+    removeExternalVariable,
+  } = useBuilderStore();
   const variables = schema.externalVariables ?? [];
 
   const [isAdding, setIsAdding] = useState(false);
@@ -61,16 +71,26 @@ export function ExternalVariablePanel() {
 
   function validateForm(): string | null {
     if (!form.id.trim()) return "ID is required";
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(form.id.trim())) return "ID must be alphanumeric (no spaces)";
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(form.id.trim()))
+      return "ID must be alphanumeric (no spaces)";
     if (!form.label.trim()) return "Label is required";
-    if (isAdding && variables.some((v) => v.id === form.id.trim())) return `ID "${form.id}" already exists`;
+    if (isAdding && variables.some((v) => v.id === form.id.trim()))
+      return `ID "${form.id}" already exists`;
     return null;
   }
 
   function submitAdd() {
     const err = validateForm();
-    if (err) { setError(err); return; }
-    addExternalVariable({ id: form.id.trim(), label: form.label.trim(), type: form.type, blocking: form.blocking });
+    if (err) {
+      setError(err);
+      return;
+    }
+    addExternalVariable({
+      id: form.id.trim(),
+      label: form.label.trim(),
+      type: form.type,
+      blocking: form.blocking,
+    });
     setIsAdding(false);
     setForm(BLANK_FORM);
     setError(null);
@@ -78,16 +98,26 @@ export function ExternalVariablePanel() {
 
   function submitEdit() {
     const err = validateForm();
-    if (err) { setError(err); return; }
+    if (err) {
+      setError(err);
+      return;
+    }
     if (!editingId) return;
-    updateExternalVariable(editingId, { label: form.label.trim(), type: form.type, blocking: form.blocking });
+    updateExternalVariable(editingId, {
+      label: form.label.trim(),
+      type: form.type,
+      blocking: form.blocking,
+    });
     setEditingId(null);
     setError(null);
   }
 
   function remove(id: string) {
     removeExternalVariable(id);
-    if (editingId === id) { setEditingId(null); setError(null); }
+    if (editingId === id) {
+      setEditingId(null);
+      setError(null);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -100,7 +130,11 @@ export function ExternalVariablePanel() {
       <div style={headerStyle}>
         <span style={titleStyle}>External Variables</span>
         {!isAdding && (
-          <button style={addBtnStyle} onClick={startAdd} title="Add external variable">
+          <button
+            style={addBtnStyle}
+            onClick={startAdd}
+            title="Add external variable"
+          >
             + Add
           </button>
         )}
@@ -109,8 +143,10 @@ export function ExternalVariablePanel() {
       {/* Empty state */}
       {variables.length === 0 && !isAdding && (
         <p style={emptyStyle}>
-          No external variables declared.<br />
-          External vars are injected at runtime<br />
+          No external variables declared.
+          <br />
+          External vars are injected at runtime
+          <br />
           (e.g. <code style={codeStyle}>$ext.userId</code>).
         </p>
       )}
@@ -121,7 +157,13 @@ export function ExternalVariablePanel() {
         const isBeingEdited = editingId === v.id;
 
         return (
-          <div key={v.id} style={{ ...varRowStyle, ...(isBeingEdited ? varRowActiveStyle : {}) }}>
+          <div
+            key={v.id}
+            style={{
+              ...varRowStyle,
+              ...(isBeingEdited ? varRowActiveStyle : {}),
+            }}
+          >
             {isBeingEdited ? (
               <VarForm
                 form={form}
@@ -139,21 +181,33 @@ export function ExternalVariablePanel() {
                     <span style={varIdStyle}>${`ext.${v.id}`}</span>
                     <div style={badgeRowStyle}>
                       <TypeBadge type={v.type} />
-                      {v.blocking && <span style={blockingBadgeStyle}>blocking</span>}
+                      {v.blocking && (
+                        <span style={blockingBadgeStyle}>blocking</span>
+                      )}
                     </div>
                   </div>
                   <span style={varLabelStyle}>{v.label}</span>
                   {refs.length > 0 && (
                     <div style={refsStyle}>
                       {refs.map((ref, i) => (
-                        <span key={i} style={refChipStyle}>{ref}</span>
+                        <span key={i} style={refChipStyle}>
+                          {ref}
+                        </span>
                       ))}
                     </div>
                   )}
                 </div>
                 <div style={varActionsStyle}>
-                  <button style={actionBtnStyle} onClick={() => startEdit(v)}>Edit</button>
-                  <button style={{ ...actionBtnStyle, color: "#ef4444" }} title="Remove variable" onClick={() => remove(v.id)}>✕</button>
+                  <button style={actionBtnStyle} onClick={() => startEdit(v)}>
+                    Edit
+                  </button>
+                  <button
+                    style={{ ...actionBtnStyle, color: "#ef4444" }}
+                    title="Remove variable"
+                    onClick={() => remove(v.id)}
+                  >
+                    ✕
+                  </button>
                 </div>
               </>
             )}
@@ -192,7 +246,15 @@ interface VarFormProps {
   idReadOnly?: boolean;
 }
 
-function VarForm({ form, onChange, error, onSubmit, onCancel, submitLabel, idReadOnly }: VarFormProps) {
+function VarForm({
+  form,
+  onChange,
+  error,
+  onSubmit,
+  onCancel,
+  submitLabel,
+  idReadOnly,
+}: VarFormProps) {
   function set(key: keyof FormState, value: unknown) {
     onChange({ ...form, [key]: value });
   }
@@ -202,7 +264,10 @@ function VarForm({ form, onChange, error, onSubmit, onCancel, submitLabel, idRea
       {/* ID */}
       <label style={formLabelStyle}>ID</label>
       <input
-        style={{ ...inputStyle, ...(idReadOnly ? { background: "#f9fafb", color: "#6b7280" } : {}) }}
+        style={{
+          ...inputStyle,
+          ...(idReadOnly ? { background: "#f9fafb", color: "#6b7280" } : {}),
+        }}
         value={form.id}
         onChange={(e) => set("id", e.target.value)}
         placeholder="e.g. userId"
@@ -220,7 +285,11 @@ function VarForm({ form, onChange, error, onSubmit, onCancel, submitLabel, idRea
 
       {/* Type */}
       <label style={formLabelStyle}>Type</label>
-      <select style={selectStyle} value={form.type} onChange={(e) => set("type", e.target.value as VarType)}>
+      <select
+        style={selectStyle}
+        value={form.type}
+        onChange={(e) => set("type", e.target.value as VarType)}
+      >
         <option value="string">string</option>
         <option value="number">number</option>
         <option value="boolean">boolean</option>
@@ -235,7 +304,9 @@ function VarForm({ form, onChange, error, onSubmit, onCancel, submitLabel, idRea
           onChange={(e) => set("blocking", e.target.checked)}
           style={{ marginRight: 6 }}
         />
-        <span style={formLabelStyle}>Blocking — throw if missing at runtime</span>
+        <span style={formLabelStyle}>
+          Blocking — throw if missing at runtime
+        </span>
       </label>
 
       {/* Error */}
@@ -243,8 +314,12 @@ function VarForm({ form, onChange, error, onSubmit, onCancel, submitLabel, idRea
 
       {/* Actions */}
       <div style={formActionsStyle}>
-        <button style={cancelBtnStyle} onClick={onCancel}>Cancel</button>
-        <button style={submitBtnStyle} onClick={onSubmit}>{submitLabel}</button>
+        <button style={cancelBtnStyle} onClick={onCancel}>
+          Cancel
+        </button>
+        <button style={submitBtnStyle} onClick={onSubmit}>
+          {submitLabel}
+        </button>
       </div>
     </div>
   );
@@ -262,7 +337,9 @@ function TypeBadge({ type }: { type: VarType }) {
     object: "#f3e8ff",
   };
   return (
-    <span style={{ ...typeBadgeStyle, background: colors[type] ?? "#f3f4f6" }}>{type}</span>
+    <span style={{ ...typeBadgeStyle, background: colors[type] ?? "#f3f4f6" }}>
+      {type}
+    </span>
   );
 }
 
@@ -352,7 +429,8 @@ const emptyStyle: React.CSSProperties = {
 
 const codeStyle: React.CSSProperties = {
   fontFamily: "monospace",
-  background: "#f3f4f6",
+  background: "#f97316",
+  color: "#070714",
   borderRadius: 3,
   padding: "1px 3px",
 };

@@ -21,7 +21,7 @@ const FEATURES = [
 
 export function BuilderSection() {
   return (
-    <section className="py-24 px-6" style={{ background: "#050510" }}>
+    <section className="py-24 px-6" style={{ background: "rgba(5,5,16,0.88)" }}>
       <div className="max-w-6xl mx-auto">
 
         {/* Header */}
