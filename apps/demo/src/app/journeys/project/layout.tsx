@@ -20,7 +20,7 @@ export default function ProjectLayout({ children }: { children: React.ReactNode 
       }}
     >
       {children}
-      <WaypointDevtools />
+      <WaypointDevtools forceShow />
     </WaypointRunner>
   );
 }

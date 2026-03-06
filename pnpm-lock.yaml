@@ -140,6 +140,9 @@ importers:
       '@waypointjs/core':
         specifier: workspace:*
         version: link:../core
+      '@waypointjs/devtools':
+        specifier: workspace:*
+        version: link:../devtools
       '@waypointjs/react':
         specifier: workspace:*
         version: link:../react

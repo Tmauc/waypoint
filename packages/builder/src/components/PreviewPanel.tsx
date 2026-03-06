@@ -5,6 +5,7 @@ import type { WaypointRuntimeStore } from "@waypointjs/core";
 import { resolveTree, getNextStep, getPreviousStep } from "@waypointjs/core";
 import type { WaypointSchema } from "@waypointjs/core";
 import type { ResolvedField } from "@waypointjs/core";
+import { DevPanel } from "@waypointjs/devtools";
 
 interface PreviewPanelProps {
   store: StoreApi<WaypointRuntimeStore>;
@@ -110,6 +111,8 @@ export function PreviewPanel({ store, schema }: PreviewPanelProps) {
 
   return (
     <div style={styles.panel}>
+      <DevPanel store={store} />
+
       {/* Left column — step list */}
       <div style={styles.leftCol}>
         <StepList

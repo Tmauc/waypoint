@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { useStore } from "zustand";
-import { useWaypointRuntimeContext } from "@waypointjs/next";
+import { WaypointRuntimeContext } from "@waypointjs/next";
 import {
   getResolvedTree,
   calculateProgressFromState,
@@ -28,6 +28,8 @@ import {
 export interface DevPanelProps {
   position?: "bottom-right" | "bottom-left";
   defaultOpen?: boolean;
+  /** Pass a store directly instead of reading from WaypointRuntimeContext */
+  store?: import("zustand").StoreApi<WaypointRuntimeStore>;
 }
 
 // ---------------------------------------------------------------------------
@@ -62,7 +64,7 @@ function Section({
 // DevPanel
 // ---------------------------------------------------------------------------
 
-export function DevPanel({ position = "bottom-right", defaultOpen = false }: DevPanelProps) {
+export function DevPanel({ position = "bottom-right", defaultOpen = false, store: storeProp }: DevPanelProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isMounted, setIsMounted] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
@@ -76,22 +78,23 @@ export function DevPanel({ position = "bottom-right", defaultOpen = false }: Dev
   // SSR safety — don't render until client-side hydration is complete
   useEffect(() => setIsMounted(true), []);
 
-  const { store } = useWaypointRuntimeContext();
+  const ctx = useContext(WaypointRuntimeContext);
+  const store = storeProp ?? ctx?.store;
 
-  const schema     = useStore(store, (s: WaypointRuntimeStore) => s.schema);
-  const data       = useStore(store, (s: WaypointRuntimeStore) => s.data);
-  const externalVars = useStore(store, (s: WaypointRuntimeStore) => s.externalVars);
-  const currentStepId = useStore(store, (s: WaypointRuntimeStore) => s.currentStepId);
-  const history    = useStore(store, (s: WaypointRuntimeStore) => s.history);
-  const isSubmitting = useStore(store, (s: WaypointRuntimeStore) => s.isSubmitting);
-  const completed  = useStore(store, (s: WaypointRuntimeStore) => s.completed);
+  const schema       = useStore(store!, (s: WaypointRuntimeStore) => s.schema);
+  const data         = useStore(store!, (s: WaypointRuntimeStore) => s.data);
+  const externalVars = useStore(store!, (s: WaypointRuntimeStore) => s.externalVars);
+  const currentStepId = useStore(store!, (s: WaypointRuntimeStore) => s.currentStepId);
+  const history      = useStore(store!, (s: WaypointRuntimeStore) => s.history);
+  const isSubmitting = useStore(store!, (s: WaypointRuntimeStore) => s.isSubmitting);
+  const completed    = useStore(store!, (s: WaypointRuntimeStore) => s.completed);
 
-  const fullState  = useStore(store, (s: WaypointRuntimeStore) => s);
-  const tree       = useMemo(() => getResolvedTree(fullState), [fullState]);
-  const progress   = useMemo(() => calculateProgressFromState(fullState), [fullState]);
+  const fullState   = useStore(store!, (s: WaypointRuntimeStore) => s);
+  const tree        = useMemo(() => getResolvedTree(fullState), [fullState]);
+  const progress    = useMemo(() => calculateProgressFromState(fullState), [fullState]);
   const missingVars = useMemo(() => getMissingBlockingVars(fullState), [fullState]);
 
-  if (!isMounted || !schema) return null;
+  if (!isMounted || !store || !schema) return null;
 
   const side = position === "bottom-left" ? "left" : "right";
 
@@ -117,7 +120,7 @@ export function DevPanel({ position = "bottom-right", defaultOpen = false }: Dev
           <span style={{ opacity: 0.7 }}>…</span>
         )}
         {missingVars.length > 0 && (
-          <span style={{ background: "#ef4444", borderRadius: "50%", width: "0.85rem", height: "0.85rem", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.55rem" }}>
+          <span style={{ background: "#ef4444", borderRadius: "50%", width: "0.9rem", height: "0.9rem", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.65rem", fontWeight: 700 }}>
             !
           </span>
         )}

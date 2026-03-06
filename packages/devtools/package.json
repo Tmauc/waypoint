@@ -1,6 +1,6 @@
 {
   "name": "@waypointjs/devtools",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Dev-only debug panel for Waypoint Runtime",
   "license": "MIT",
   "type": "module",
