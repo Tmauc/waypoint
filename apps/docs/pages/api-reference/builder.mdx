@@ -40,6 +40,9 @@ import { WaypointBuilder } from "@waypointjs/builder";
 | `theme` | `WaypointTheme` | | Custom theme (colors, fonts) |
 | `className` | `string` | | CSS class on the root element |
 | `style` | `React.CSSProperties` | | Inline style on the root element |
+| `readOnly` | `boolean` | | Disable all editing — view-only mode |
+| `appCustomTypes` | `CustomTypeDefinition[]` | | Custom field types — appear in the field type dropdown under "Custom" |
+| `externalEnums` | `ExternalEnum[]` | | App-provided option lists — select/multiselect/radio fields can reference them by id |
 
 ### Layout
 
@@ -57,10 +60,24 @@ The builder requires explicit dimensions — set `height: 100%` on a sized paren
 
 Clicking **▶ Tester** in the toolbar switches to a **split view**:
 
-- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden
+- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden; and, if the schema declares `externalVariables`, an **External Variables** panel with mock value inputs (text, number, checkbox for boolean). Mock values sync immediately to the runtime store — conditions re-evaluate in real time.
 - **Right panel** — live step renderer with field inputs, inline validation, progress bar, and Prev/Next navigation
 
 Click **← Éditer** to return to the builder. The preview uses an isolated in-memory store — no localStorage, no side effects.
+
+### Read-only mode
+
+Pass `readOnly` to display a schema without allowing modifications:
+
+```tsx
+<WaypointBuilder defaultValue={schema} readOnly />
+```
+
+In read-only mode:
+- All add/remove/duplicate/reorder controls are hidden
+- All inputs in the step and field editors are disabled
+- The toolbar shows only "Export JSON" + a "View only" badge
+- Preview mode (`▶ Tester`) is disabled
 
 ### Theme
 
@@ -74,6 +91,136 @@ import { WaypointBuilder, DEFAULT_THEME, DARK_THEME } from "@waypointjs/builder"
 ```
 
 Built-in themes: `DEFAULT_THEME`, `DARK_THEME`. All values are mapped to CSS custom properties at the root element.
+
+---
+
+---
+
+## External Enums
+
+External enums are app-provided option lists that you inject into the builder (and runner) at runtime. The schema stores only a **reference** (`externalEnumId`) — the actual values are never written to the schema JSON, which keeps schemas portable across environments.
+
+### Defining enums
+
+```tsx
+import type { ExternalEnum } from "@waypointjs/core";
+
+const externalEnums: ExternalEnum[] = [
+  {
+    id: "countries",
+    label: "Countries",
+    values: [
+      { value: "fr", label: "France" },
+      { value: "de", label: "Germany" },
+      { value: "us", label: "United States" },
+    ],
+  },
+  {
+    id: "job_roles",
+    label: "Job roles",
+    values: [
+      { value: "dev", label: "Developer" },
+      { value: "pm", label: "Product Manager" },
+    ],
+  },
+];
+
+<WaypointBuilder externalEnums={externalEnums} ... />
+```
+
+### Using enums in the builder
+
+Once injected, enums appear throughout the builder UI:
+
+**Field options source** — For `select`, `multiselect`, and `radio` fields, the field editor shows an "Options source" dropdown. Selecting an enum replaces the hardcoded `options` array with `externalEnumId`. The field list shows a `⊞ label` badge.
+
+**Condition builder (visibility)** — Every condition rule has an operator dropdown. Two special operators are available when enums exist:
+- `is in enum` — the field's value must be one of the enum's values
+- `not in enum` — the field's value must not be in the enum
+
+The value input for these operators becomes a dropdown to select the target enum by name. For all other operators, a `⊞` picker button appears next to the text input to inject any enum value into the rule value field.
+
+**Validation builder** — The same `is in enum` / `not in enum` rule types are available in the validation rules modal.
+
+### Passing enums to the runner
+
+Use the same array with `WaypointRunner` so enum-based conditions and validations evaluate correctly at runtime:
+
+```tsx
+<WaypointRunner schema={schema} externalEnums={externalEnums}>
+  {children}
+</WaypointRunner>
+```
+
+And pass it to `buildZodSchema` when building Zod schemas manually:
+
+```ts
+const zodSchema = buildZodSchema(fields, externalEnums);
+```
+
+---
+
+## Custom Types
+
+Custom types are app-specific field types that extend the built-in set (`text`, `select`, `number`, etc.). They appear in the field type dropdown under a **Custom** optgroup. When selected, their `defaultValidation` (if defined) is auto-applied to the field.
+
+### Defining custom types
+
+```tsx
+import type { CustomTypeDefinition } from "@waypointjs/core";
+
+const appCustomTypes: CustomTypeDefinition[] = [
+  {
+    id: "rich-text",
+    label: "Rich Text",
+    icon: "📝",
+    defaultValidation: [{ type: "required", message: "Content is required" }],
+  },
+  {
+    id: "date-range",
+    label: "Date Range",
+    icon: "📅",
+  },
+  {
+    id: "file-upload",
+    label: "File Upload",
+    icon: "📎",
+    metadata: { accept: "image/*,application/pdf" },
+  },
+];
+
+<WaypointBuilder appCustomTypes={appCustomTypes} ... />
+```
+
+### Using custom types at runtime
+
+The `type` value is stored as-is in the schema. When rendering fields, check for custom types and delegate to your own renderer:
+
+```tsx
+// With @waypointjs/next:
+<WaypointRunner schema={schema} customFieldTypes={appCustomTypes}>
+  {children}
+</WaypointRunner>
+
+// In your step page, check field.definition.type:
+{fields.map((field) => {
+  const isCustom = appCustomTypes.some((t) => t.id === field.definition.type);
+  if (isCustom) return <MyCustomField key={field.definition.id} field={field} />;
+  // ... standard fields
+})}
+```
+
+### CustomTypeDefinition
+
+```ts
+interface CustomTypeDefinition {
+  id: string;                        // stored as field.type in the schema
+  label: string;                     // shown in the type dropdown
+  icon?: string;                     // displayed in the builder UI
+  defaultValidation?: ValidationRule[]; // auto-applied when the type is selected
+  metadata?: Record<string, unknown>; // passed through to your runtime renderer
+}
+```
 
 ---
 
@@ -93,6 +240,16 @@ const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
 |---|---|
 | `loadSchema(schema)` | Load a schema into the builder |
 | `resetSchema()` | Reset to the empty default schema |
+| `addStep(partial?)` | Add a step, returns new step ID |
+| `updateStep(stepId, updates)` | Update step properties |
+| `removeStep(stepId)` | Remove a step |
+| `duplicateStep(stepId)` | Clone step with new IDs, insert after original |
+| `reorderSteps(from, to)` | Reorder steps by index |
+| `addField(stepId, partial?)` | Add a field to a step, returns new field ID |
+| `updateField(stepId, fieldId, updates)` | Update field properties |
+| `removeField(stepId, fieldId)` | Remove a field |
+| `duplicateField(stepId, fieldId)` | Clone field with new ID, insert after original |
+| `reorderFields(stepId, from, to)` | Reorder fields within a step |
 
 <Callout type="warning">
   `useBuilderStore` is a singleton — there can only be one builder instance per page. For multiple builders, you'd need to isolate each in its own React root.

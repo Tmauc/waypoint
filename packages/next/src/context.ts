@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 
-import type { WaypointSchema } from "@waypointjs/core";
+import type { WaypointSchema, CustomTypeDefinition, ExternalEnum } from "@waypointjs/core";
 import type { WaypointRuntimeStore } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
@@ -17,6 +17,10 @@ export interface WaypointRuntimeContextValue {
     data: Record<string, unknown>
   ) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  /** App-provided custom field types — available for rendering custom fields */
+  customFieldTypes?: CustomTypeDefinition[];
+  /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions by the tree resolver */
+  externalEnums?: ExternalEnum[];
 }
 
 // ---------------------------------------------------------------------------

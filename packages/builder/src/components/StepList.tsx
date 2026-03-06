@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBuilderStore } from "../store/builder-store";
+import { useBuilderReadOnly } from "../context";
 import {
   computeStepDependencies,
   getStepDependencyLabels,
@@ -9,8 +10,9 @@ import {
 } from "../utils/step-dependencies";
 
 export function StepList() {
-  const { schema, selectedStepId, addStep, removeStep, selectStep, reorderSteps } =
+  const { schema, selectedStepId, addStep, removeStep, duplicateStep, selectStep, reorderSteps } =
     useBuilderStore();
+  const readOnly = useBuilderReadOnly();
 
   const [moveError, setMoveError] = useState<string | null>(null);
 
@@ -32,9 +34,11 @@ export function StepList() {
     <div style={styles.container}>
       <div style={styles.header}>
         <span style={styles.title}>Steps ({steps.length})</span>
-        <button style={styles.addBtn} onClick={() => addStep()}>
-          + Add step
-        </button>
+        {!readOnly && (
+          <button style={styles.addBtn} onClick={() => addStep()}>
+            + Add step
+          </button>
+        )}
       </div>
 
       {/* Dependency violation error */}
@@ -88,56 +92,68 @@ export function StepList() {
                   </div>
                 </div>
 
-                <div style={styles.cardActions}>
-                  {index > 0 && (
+                {!readOnly && (
+                  <div style={styles.cardActions}>
+                    {index > 0 && (
+                      <button
+                        style={{
+                          ...styles.iconBtn,
+                          ...(canMoveUp ? {} : styles.iconBtnBlocked),
+                        }}
+                        title={
+                          canMoveUp
+                            ? "Move up"
+                            : `Can't move up — dependency order required`
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          tryMove(index, index - 1);
+                        }}
+                      >
+                        ↑
+                      </button>
+                    )}
+                    {index < steps.length - 1 && (
+                      <button
+                        style={{
+                          ...styles.iconBtn,
+                          ...(canMoveDown ? {} : styles.iconBtnBlocked),
+                        }}
+                        title={
+                          canMoveDown
+                            ? "Move down"
+                            : `Can't move down — dependency order required`
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          tryMove(index, index + 1);
+                        }}
+                      >
+                        ↓
+                      </button>
+                    )}
                     <button
-                      style={{
-                        ...styles.iconBtn,
-                        ...(canMoveUp ? {} : styles.iconBtnBlocked),
-                      }}
-                      title={
-                        canMoveUp
-                          ? "Move up"
-                          : `Can't move up — dependency order required`
-                      }
+                      style={styles.iconBtn}
+                      title="Duplicate step"
                       onClick={(e) => {
                         e.stopPropagation();
-                        tryMove(index, index - 1);
+                        duplicateStep(step.id);
                       }}
                     >
-                      ↑
+                      ⧉
                     </button>
-                  )}
-                  {index < steps.length - 1 && (
                     <button
-                      style={{
-                        ...styles.iconBtn,
-                        ...(canMoveDown ? {} : styles.iconBtnBlocked),
-                      }}
-                      title={
-                        canMoveDown
-                          ? "Move down"
-                          : `Can't move down — dependency order required`
-                      }
+                      style={{ ...styles.iconBtn, ...styles.deleteBtn }}
+                      title="Remove step"
                       onClick={(e) => {
                         e.stopPropagation();
-                        tryMove(index, index + 1);
+                        removeStep(step.id);
                       }}
                     >
-                      ↓
+                      ✕
                     </button>
-                  )}
-                  <button
-                    style={{ ...styles.iconBtn, ...styles.deleteBtn }}
-                    title="Remove step"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeStep(step.id);
-                    }}
-                  >
-                    ✕
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Dependency info */}

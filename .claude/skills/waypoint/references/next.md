@@ -44,6 +44,16 @@ interface WaypointRunnerProps {
   /** Called whenever any field value changes */
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
 
+  /**
+   * App-provided custom field types.
+   * Exposed via `useWaypointRuntimeContext().customFieldTypes` for the app to use when rendering custom fields.
+   * Reuses `CustomTypeDefinition` from `@waypointjs/core`.
+   */
+  customFieldTypes?: CustomTypeDefinition[];
+
+  /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions by the tree resolver */
+  externalEnums?: ExternalEnum[];
+
   children: React.ReactNode;
 }
 ```
@@ -229,6 +239,8 @@ interface WaypointRuntimeContextValue {
   onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
   onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  customFieldTypes?: CustomTypeDefinition[];  // from WaypointRunner.customFieldTypes
+  externalEnums?: ExternalEnum[];             // from WaypointRunner.externalEnums
 }
 ```
 

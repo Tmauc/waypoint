@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ExternalVars, JourneyData } from "../conditions";
-import type { WaypointSchema } from "../schema";
+import type { ExternalEnum, WaypointSchema } from "../schema";
 import {
   calculateProgress,
   findLastValidStep,
@@ -402,5 +402,100 @@ describe("findLastValidStep", () => {
     const result = resolveTree(baseSchema, data, emptyVars);
     const last = findLastValidStep(result.steps, data, emptyVars);
     expect(last?.definition.id).toBe("education");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveTree — external enums
+// ---------------------------------------------------------------------------
+
+const enumSchema: WaypointSchema = {
+  version: "1",
+  id: "enum-test",
+  name: "Enum Test",
+  steps: [
+    {
+      id: "step1",
+      title: "Step 1",
+      url: "/step1",
+      fields: [
+        {
+          id: "country",
+          type: "select",
+          label: "Country",
+          externalEnumId: "countries",
+        },
+        {
+          id: "role",
+          type: "select",
+          label: "Role",
+          options: [{ label: "Admin", value: "admin" }],
+        },
+        {
+          id: "missing_enum",
+          type: "select",
+          label: "Missing Enum",
+          externalEnumId: "nonexistent",
+        },
+      ],
+    },
+  ],
+};
+
+const testEnums: ExternalEnum[] = [
+  {
+    id: "countries",
+    label: "Countries",
+    values: [
+      { label: "France", value: "fr" },
+      { label: "USA", value: "us" },
+    ],
+  },
+];
+
+describe("resolveTree — external enums", () => {
+  it("injects resolvedOptions for a field referencing an existing enum", () => {
+    const tree = resolveTree(enumSchema, {}, emptyVars, testEnums);
+    const countryField = tree.steps[0].fields.find(
+      (f) => f.definition.id === "country"
+    );
+    expect(countryField?.resolvedOptions).toEqual([
+      { label: "France", value: "fr" },
+      { label: "USA", value: "us" },
+    ]);
+  });
+
+  it("leaves resolvedOptions undefined for a field with hardcoded options", () => {
+    const tree = resolveTree(enumSchema, {}, emptyVars, testEnums);
+    const roleField = tree.steps[0].fields.find(
+      (f) => f.definition.id === "role"
+    );
+    expect(roleField?.resolvedOptions).toBeUndefined();
+  });
+
+  it("leaves resolvedOptions undefined when enum id is not found", () => {
+    const tree = resolveTree(enumSchema, {}, emptyVars, testEnums);
+    const missingField = tree.steps[0].fields.find(
+      (f) => f.definition.id === "missing_enum"
+    );
+    expect(missingField?.resolvedOptions).toBeUndefined();
+  });
+
+  it("leaves resolvedOptions undefined when no externalEnums provided", () => {
+    const tree = resolveTree(enumSchema, {}, emptyVars);
+    const countryField = tree.steps[0].fields.find(
+      (f) => f.definition.id === "country"
+    );
+    expect(countryField?.resolvedOptions).toBeUndefined();
+  });
+
+  it("does not affect other resolved field properties", () => {
+    const tree = resolveTree(enumSchema, {}, emptyVars, testEnums);
+    const countryField = tree.steps[0].fields.find(
+      (f) => f.definition.id === "country"
+    );
+    expect(countryField?.visible).toBe(true);
+    expect(countryField?.dependenciesMet).toBe(true);
+    expect(countryField?.definition.externalEnumId).toBe("countries");
   });
 });

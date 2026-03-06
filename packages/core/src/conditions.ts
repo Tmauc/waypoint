@@ -1,4 +1,4 @@
-import type { ConditionGroup, ConditionOperator, ConditionRule } from "./schema";
+import type { ConditionGroup, ConditionOperator, ConditionRule, ExternalEnum } from "./schema";
 
 // ---------------------------------------------------------------------------
 // Data context
@@ -129,9 +129,19 @@ function evaluateOperator(
 function evaluateRule(
   rule: ConditionRule,
   data: JourneyData,
-  externalVars: ExternalVars
+  externalVars: ExternalVars,
+  externalEnums?: ExternalEnum[]
 ): boolean {
   const actual = resolveFieldValue(rule.field, data, externalVars);
+
+  if ((rule.operator === "inEnum" || rule.operator === "notInEnum") && externalEnums) {
+    const enumDef = externalEnums.find((e) => e.id === String(rule.value));
+    const values = enumDef?.values.map((v) => String(v.value)) ?? [];
+    return rule.operator === "inEnum"
+      ? values.includes(String(actual))
+      : !values.includes(String(actual));
+  }
+
   return evaluateOperator(rule.operator, actual, rule.value);
 }
 
@@ -142,14 +152,15 @@ function evaluateRule(
 export function evaluateConditionGroup(
   group: ConditionGroup,
   data: JourneyData,
-  externalVars: ExternalVars
+  externalVars: ExternalVars,
+  externalEnums?: ExternalEnum[]
 ): boolean {
   const ruleResults = group.rules.map((rule) =>
-    evaluateRule(rule, data, externalVars)
+    evaluateRule(rule, data, externalVars, externalEnums)
   );
 
   const groupResults = (group.groups ?? []).map((subGroup) =>
-    evaluateConditionGroup(subGroup, data, externalVars)
+    evaluateConditionGroup(subGroup, data, externalVars, externalEnums)
   );
 
   const allResults = [...ruleResults, ...groupResults];
@@ -168,8 +179,9 @@ export function evaluateConditionGroup(
 export function isVisible(
   visibleWhen: ConditionGroup | undefined,
   data: JourneyData,
-  externalVars: ExternalVars
+  externalVars: ExternalVars,
+  externalEnums?: ExternalEnum[]
 ): boolean {
   if (!visibleWhen) return true;
-  return evaluateConditionGroup(visibleWhen, data, externalVars);
+  return evaluateConditionGroup(visibleWhen, data, externalVars, externalEnums);
 }

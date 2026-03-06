@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBuilderStore } from "../store/builder-store";
+import { useBuilderReadOnly, useBuilderCustomTypes, useBuilderExternalEnums } from "../context";
 import { isFieldMoveValid } from "../utils/step-dependencies";
 
 const FIELD_TYPES = [
@@ -12,8 +13,11 @@ const FIELD_TYPES = [
 export function FieldList() {
   const {
     schema, selectedStepId, selectedFieldId,
-    addField, removeField, updateField, selectField, reorderFields,
+    addField, removeField, duplicateField, updateField, selectField, reorderFields,
   } = useBuilderStore();
+  const readOnly = useBuilderReadOnly();
+  const appCustomTypes = useBuilderCustomTypes();
+  const externalEnums = useBuilderExternalEnums();
 
   const [moveError, setMoveError] = useState<string | null>(null);
 
@@ -54,9 +58,11 @@ export function FieldList() {
           <div style={styles.stepTitle}>{step.title}</div>
           <div style={styles.stepSub}>{step.fields.length} field{step.fields.length !== 1 ? "s" : ""}</div>
         </div>
-        <button style={styles.addBtn} onClick={() => addField(step.id)}>
-          + Add field
-        </button>
+        {!readOnly && (
+          <button style={styles.addBtn} onClick={() => addField(step.id)}>
+            + Add field
+          </button>
+        )}
       </div>
 
       {moveError && (
@@ -74,6 +80,9 @@ export function FieldList() {
           const isRequired = field.validation?.some((v) => v.type === "required") ?? false;
           const hasCondition = !!field.visibleWhen;
           const hasDeps = (field.dependsOn?.length ?? 0) > 0;
+          const enumDef = field.externalEnumId
+            ? externalEnums.find((e) => e.id === field.externalEnumId)
+            : undefined;
           const isUsedAsDep = allDependencyTargets.has(`${step.id}.${field.id}`);
 
           const canMoveUp = index > 0 &&
@@ -101,39 +110,75 @@ export function FieldList() {
             >
               <div style={styles.cardTop}>
                 <div style={styles.cardLeft}>
-                  <span style={styles.typeBadge}>{field.type}</span>
+                  {(() => {
+                    const ct = appCustomTypes.find((c) => c.id === field.type);
+                    return (
+                      <span style={{ ...styles.typeBadge, ...(ct ? styles.typeBadgeCustom : {}) }}>
+                        {ct ? `${ct.icon ? ct.icon + " " : ""}${ct.label}` : field.type}
+                      </span>
+                    );
+                  })()}
                   <span style={styles.fieldLabel}>{field.label}</span>
                 </div>
                 <div style={styles.cardRight}>
-                  <select
-                    style={styles.typeSelect}
-                    value={field.type}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => updateField(step.id, field.id, { type: e.target.value })}
-                  >
-                    {FIELD_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                  {index > 0 && (
+                  {!readOnly && (
+                    <select
+                      style={styles.typeSelect}
+                      value={field.type}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        const newType = e.target.value;
+                        const customType = appCustomTypes.find((ct) => ct.id === newType);
+                        updateField(step.id, field.id, {
+                          type: newType,
+                          ...(customType?.defaultValidation
+                            ? { validation: customType.defaultValidation }
+                            : {}),
+                        });
+                      }}
+                    >
+                      {FIELD_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                      {appCustomTypes.length > 0 && (
+                        <optgroup label="Custom">
+                          {appCustomTypes.map((ct) => (
+                            <option key={ct.id} value={ct.id}>
+                              {ct.icon ? `${ct.icon} ` : ""}{ct.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  )}
+                  {!readOnly && index > 0 && (
                     <button
                       style={{ ...styles.iconBtn, ...(canMoveUp ? {} : styles.iconBtnBlocked) }}
                       title={canMoveUp ? "Move up" : "Can't move — dependency order required"}
                       onClick={(e) => { e.stopPropagation(); tryMove(index, index - 1); }}
                     >↑</button>
                   )}
-                  {index < step.fields.length - 1 && (
+                  {!readOnly && index < step.fields.length - 1 && (
                     <button
                       style={{ ...styles.iconBtn, ...(canMoveDown ? {} : styles.iconBtnBlocked) }}
                       title={canMoveDown ? "Move down" : "Can't move — dependency order required"}
                       onClick={(e) => { e.stopPropagation(); tryMove(index, index + 1); }}
                     >↓</button>
                   )}
-                  <button
-                    style={{ ...styles.iconBtn, color: "var(--wp-danger)" }}
-                    title="Remove field"
-                    onClick={(e) => { e.stopPropagation(); removeField(step.id, field.id); }}
-                  >✕</button>
+                  {!readOnly && (
+                    <button
+                      style={styles.iconBtn}
+                      title="Duplicate field"
+                      onClick={(e) => { e.stopPropagation(); duplicateField(step.id, field.id); }}
+                    >⧉</button>
+                  )}
+                  {!readOnly && (
+                    <button
+                      style={{ ...styles.iconBtn, color: "var(--wp-danger)" }}
+                      title="Remove field"
+                      onClick={(e) => { e.stopPropagation(); removeField(step.id, field.id); }}
+                    >✕</button>
+                  )}
                 </div>
               </div>
 
@@ -144,6 +189,11 @@ export function FieldList() {
                 {hasCondition && <span style={styles.badgeCondition}>conditional</span>}
                 {hasDeps && <span style={styles.badgeDep}>depends on {field.dependsOn!.length}</span>}
                 {isUsedAsDep && <span style={styles.badgeUsed}>← dependency</span>}
+                {field.externalEnumId && (
+                  <span style={styles.badgeEnum}>
+                    ⊞ {enumDef ? enumDef.label : field.externalEnumId}
+                  </span>
+                )}
               </div>
 
               {/* Intra-step dependency info */}
@@ -207,6 +257,9 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 10, background: "var(--wp-primary-bg)", color: "var(--wp-primary-dark)",
     padding: "2px 7px", borderRadius: 4, fontWeight: 600, flexShrink: 0,
   },
+  typeBadgeCustom: {
+    background: "var(--wp-success-bg)", color: "var(--wp-success)",
+  },
   fieldLabel: {
     fontSize: 13, fontWeight: 600, color: "var(--wp-text)",
     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
@@ -241,6 +294,10 @@ const styles: Record<string, React.CSSProperties> = {
   badgeUsed: {
     fontSize: 9, fontWeight: 600, padding: "1px 6px",
     background: "var(--wp-success-bg)", color: "var(--wp-success)", borderRadius: 3, textTransform: "uppercase",
+  },
+  badgeEnum: {
+    fontSize: 9, fontWeight: 600, padding: "1px 6px",
+    background: "var(--wp-info-bg)", color: "var(--wp-info-text)", borderRadius: 3,
   },
   depRow: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 4 },
   depLabel: { fontSize: 10, fontWeight: 600, color: "var(--wp-text-muted)", textTransform: "uppercase" },

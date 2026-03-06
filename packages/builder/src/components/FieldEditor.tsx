@@ -1,31 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import type { ValidationRule, ValidationRuleType } from "@waypointjs/core";
+import type { ValidationRule } from "@waypointjs/core";
 import { useBuilderStore } from "../store/builder-store";
+import { useBuilderExternalEnums, useBuilderReadOnly } from "../context";
 import { ConditionBuilder } from "./ConditionBuilder";
+import { ValidationBuilder } from "./ValidationBuilder";
 import { DependsOnInput } from "./DependsOnInput";
 import { Modal } from "./Modal";
 
-const VALIDATION_TYPES: { type: ValidationRuleType; label: string; hasValue: boolean }[] = [
-  { type: "required", label: "Required", hasValue: false },
-  { type: "min", label: "Min value", hasValue: true },
-  { type: "max", label: "Max value", hasValue: true },
-  { type: "minLength", label: "Min length", hasValue: true },
-  { type: "maxLength", label: "Max length", hasValue: true },
-  { type: "email", label: "Email format", hasValue: false },
-  { type: "url", label: "URL format", hasValue: false },
-  { type: "regex", label: "Regex pattern", hasValue: true },
-];
+const ENUM_FIELD_TYPES = ["select", "multiselect", "radio"];
 
 export function FieldEditor() {
   const {
     schema, selectedStepId, selectedFieldId,
     updateField, setFieldCondition,
   } = useBuilderStore();
+  const readOnly = useBuilderReadOnly();
+  const externalEnums = useBuilderExternalEnums();
 
-  const [newValidationType, setNewValidationType] = useState<ValidationRuleType>("required");
   const [conditionModalOpen, setConditionModalOpen] = useState(false);
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
 
   const step = schema.steps.find((s) => s.id === selectedStepId);
   const field = step?.fields.find((f) => f.id === selectedFieldId);
@@ -43,22 +38,8 @@ export function FieldEditor() {
   const hasCondition = !!field.visibleWhen;
   const ruleCount = field.visibleWhen?.rules.length ?? 0;
 
-  const updateValidationRule = (index: number, updates: Partial<ValidationRule>) => {
-    const updated = validation.map((v, i) => (i === index ? { ...v, ...updates } : v));
-    updateField(step.id, field.id, { validation: updated });
-  };
-
-  const removeValidationRule = (index: number) => {
-    const updated = validation.filter((_, i) => i !== index);
-    updateField(step.id, field.id, { validation: updated.length ? updated : undefined });
-  };
-
-  const addValidationRule = () => {
-    const newRule: ValidationRule = {
-      type: newValidationType,
-      message: `${newValidationType} error`,
-    };
-    updateField(step.id, field.id, { validation: [...validation, newRule] });
+  const handleValidationChange = (rules: ValidationRule[]) => {
+    updateField(step.id, field.id, { validation: rules.length ? rules : undefined });
   };
 
   const handleDependsOnChange = (paths: string[]) => {
@@ -113,6 +94,47 @@ export function FieldEditor() {
           />
         </div>
 
+        {/* External enum — shown for select/multiselect/radio when externalEnums are available */}
+        {ENUM_FIELD_TYPES.includes(field.type) && externalEnums.length > 0 && (
+          <div style={styles.group}>
+            <label style={styles.label}>Options source</label>
+            <select
+              style={styles.input}
+              disabled={readOnly}
+              value={field.externalEnumId ?? ""}
+              onChange={(e) => {
+                const enumId = e.target.value || undefined;
+                updateField(step.id, field.id, {
+                  externalEnumId: enumId,
+                  // Clear hardcoded options when switching to an enum
+                  options: enumId ? undefined : field.options,
+                });
+              }}
+            >
+              <option value="">— Hardcoded options —</option>
+              {externalEnums.map((en) => (
+                <option key={en.id} value={en.id}>
+                  {en.label} ({en.values.length} items)
+                </option>
+              ))}
+            </select>
+            {field.externalEnumId && (
+              <div style={styles.enumInfo}>
+                {(() => {
+                  const en = externalEnums.find((e) => e.id === field.externalEnumId);
+                  return en ? (
+                    <span style={styles.enumBadge}>
+                      ⊞ {en.label} · {en.values.length} options
+                    </span>
+                  ) : (
+                    <span style={styles.enumMissing}>⚠ Enum "{field.externalEnumId}" not found</span>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Depends on */}
         <div style={styles.group}>
           <label style={styles.label}>Depends on</label>
@@ -158,74 +180,61 @@ export function FieldEditor() {
 
         <div style={styles.divider} />
 
-        {/* Validation rules */}
-        <div style={styles.sectionTitle}>
-          Validation
-          {!isRequired && (
-            <span style={styles.optionalHint}>
-              — no "required" rule → field is optional
-            </span>
-          )}
-        </div>
-
-        {validation.length === 0 && (
-          <div style={styles.noRules}>No rules · field is optional by default.</div>
-        )}
-
-        {validation.map((rule, index) => {
-          const def = VALIDATION_TYPES.find((vt) => vt.type === rule.type);
-          return (
-            <div key={index} style={styles.ruleCard}>
-              <div style={styles.ruleHeader}>
-                <span
-                  style={{
-                    ...styles.ruleBadge,
-                    ...(rule.type === "required" ? styles.requiredRuleBadge : {}),
-                  }}
-                >
-                  {rule.type}
+        {/* Validation — summary */}
+        <div style={styles.conditionRow}>
+          <div style={styles.conditionInfo}>
+            <div style={styles.label}>Validation</div>
+            {validation.length > 0 ? (
+              <div style={styles.conditionSummary}>
+                <span style={styles.validationBadge}>
+                  {validation.length} rule{validation.length !== 1 ? "s" : ""}
+                  {isRequired ? " · required" : ""}
                 </span>
-                <button style={styles.removeRuleBtn} onClick={() => removeValidationRule(index)}>
-                  ✕
-                </button>
+                <span style={styles.conditionDesc}>
+                  {validation.map((r) => r.type).join(", ")}
+                </span>
               </div>
-              {def?.hasValue && (
-                <div style={styles.ruleRow}>
-                  <label style={styles.ruleLabel}>Value</label>
-                  <input
-                    style={styles.ruleInput}
-                    value={rule.value != null ? String(rule.value) : ""}
-                    onChange={(e) => updateValidationRule(index, { value: e.target.value })}
-                  />
-                </div>
-              )}
-              <div style={styles.ruleRow}>
-                <label style={styles.ruleLabel}>Error message</label>
-                <input
-                  style={styles.ruleInput}
-                  value={rule.message}
-                  onChange={(e) => updateValidationRule(index, { message: e.target.value })}
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        <div style={styles.addRule}>
-          <select
-            style={styles.ruleSelect}
-            value={newValidationType}
-            onChange={(e) => setNewValidationType(e.target.value as ValidationRuleType)}
-          >
-            {VALIDATION_TYPES.map((vt) => (
-              <option key={vt.type} value={vt.type}>{vt.label}</option>
-            ))}
-          </select>
-          <button style={styles.addRuleBtn} onClick={addValidationRule}>
-            + Add rule
-          </button>
+            ) : (
+              <div style={styles.conditionNone}>No rules · field is optional</div>
+            )}
+          </div>
+          <div style={styles.conditionActions}>
+            <button style={styles.editConditionBtn} onClick={() => setValidationModalOpen(true)}>
+              {validation.length > 0 ? "Edit" : "Add"}
+            </button>
+            {validation.length > 0 && (
+              <button
+                style={styles.clearConditionBtn}
+                onClick={() => updateField(step.id, field.id, { validation: undefined })}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Validation modal */}
+      {validationModalOpen && (
+        <Modal
+          title={`Validation — "${field.label}"`}
+          onClose={() => setValidationModalOpen(false)}
+          width={680}
+        >
+          <p style={styles.modalHint}>
+            Define validation rules for this field. All rules must pass for the field to be valid.
+          </p>
+          <ValidationBuilder
+            value={validation}
+            onChange={handleValidationChange}
+          />
+          <div style={styles.modalFooter}>
+            <button style={styles.modalCloseBtn} onClick={() => setValidationModalOpen(false)}>
+              Done
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {/* Field condition modal */}
       {conditionModalOpen && (
@@ -302,36 +311,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11, padding: "4px 10px", background: "var(--wp-danger-bg-strong)", color: "var(--wp-danger)",
     border: "none", borderRadius: "var(--wp-radius)", cursor: "pointer",
   },
-  sectionTitle: { fontSize: 12, fontWeight: 700, color: "var(--wp-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" },
-  optionalHint: { fontSize: 10, color: "var(--wp-text-subtle)", fontWeight: 400, textTransform: "none", letterSpacing: 0 },
-  noRules: { fontSize: 12, color: "var(--wp-text-subtle)" },
-  ruleCard: {
-    background: "var(--wp-surface)", border: "1px solid var(--wp-border)", borderRadius: "var(--wp-radius-lg)",
-    padding: 10, display: "flex", flexDirection: "column", gap: 8,
-  },
-  ruleHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  ruleBadge: {
-    fontSize: 11, fontWeight: 700, color: "var(--wp-primary-dark)", background: "var(--wp-primary-bg)",
+  validationBadge: {
+    fontSize: 11, fontWeight: 700, background: "var(--wp-primary-bg)", color: "var(--wp-primary-dark)",
     padding: "2px 8px", borderRadius: 4,
   },
-  requiredRuleBadge: { background: "var(--wp-danger-bg-strong)", color: "var(--wp-danger)" },
-  removeRuleBtn: { border: "none", background: "transparent", color: "var(--wp-danger)", cursor: "pointer", fontSize: 12 },
-  ruleRow: { display: "flex", flexDirection: "column", gap: 3 },
-  ruleLabel: { fontSize: 10, fontWeight: 600, color: "var(--wp-text-subtle)", textTransform: "uppercase" },
-  ruleInput: {
-    fontSize: 12, padding: "4px 6px", border: "1px solid var(--wp-border-muted)",
-    borderRadius: 4, outline: "none",
-    background: "var(--wp-canvas)", color: "var(--wp-text)",
+  enumInfo: { marginTop: 4 },
+  enumBadge: {
+    fontSize: 11, fontWeight: 600, padding: "2px 8px",
+    background: "var(--wp-info-bg)", color: "var(--wp-info-text)", borderRadius: 4,
   },
-  addRule: { display: "flex", gap: 8, alignItems: "center" },
-  ruleSelect: {
-    flex: 1, fontSize: 12, padding: "5px 6px", border: "1px solid var(--wp-border-muted)",
-    borderRadius: "var(--wp-radius)", background: "var(--wp-canvas)", color: "var(--wp-text)",
-  },
-  addRuleBtn: {
-    fontSize: 12, padding: "5px 10px", background: "var(--wp-surface-muted)",
-    border: "1px solid var(--wp-border-muted)", borderRadius: "var(--wp-radius)", cursor: "pointer",
-    fontWeight: 500, whiteSpace: "nowrap", color: "var(--wp-text-secondary)",
+  enumMissing: {
+    fontSize: 11, fontWeight: 600, padding: "2px 8px",
+    background: "var(--wp-warning-bg)", color: "var(--wp-warning)", borderRadius: 4,
   },
   modalHint: { fontSize: 13, color: "var(--wp-text-muted)", marginBottom: 16, marginTop: 0 },
   modalFooter: { marginTop: 20, display: "flex", justifyContent: "flex-end" },

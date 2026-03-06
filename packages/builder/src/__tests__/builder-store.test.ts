@@ -108,6 +108,75 @@ describe("removeStep", () => {
   });
 });
 
+describe("duplicateStep", () => {
+  it("inserts the clone right after the original", () => {
+    const store = useBuilderStore.getState();
+    const idA = store.addStep({ title: "A" });
+    const idB = store.addStep({ title: "B" });
+    store.duplicateStep(idA);
+    const ids = useBuilderStore.getState().schema.steps.map((s) => s.id);
+    expect(ids[0]).toBe(idA);
+    expect(ids[2]).toBe(idB);
+    expect(ids).toHaveLength(3);
+  });
+
+  it("clones step with a new id", () => {
+    const store = useBuilderStore.getState();
+    const id = store.addStep({ title: "Original" });
+    store.duplicateStep(id);
+    const steps = useBuilderStore.getState().schema.steps;
+    expect(steps[0].id).toBe(id);
+    expect(steps[1].id).not.toBe(id);
+  });
+
+  it("appends '(copy)' to the title", () => {
+    const store = useBuilderStore.getState();
+    const id = store.addStep({ title: "My Step" });
+    store.duplicateStep(id);
+    const steps = useBuilderStore.getState().schema.steps;
+    expect(steps[1].title).toBe("My Step (copy)");
+  });
+
+  it("clones fields with new ids", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    const fieldId = store.addField(stepId, { label: "Email" });
+    store.duplicateStep(stepId);
+    const cloned = useBuilderStore.getState().schema.steps[1];
+    expect(cloned.fields).toHaveLength(1);
+    expect(cloned.fields[0].id).not.toBe(fieldId);
+    expect(cloned.fields[0].label).toBe("Email");
+  });
+
+  it("remaps intra-step dependsOn to new ids", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep({ title: "S" });
+    const f1 = store.addField(stepId, { label: "F1" });
+    store.addField(stepId, { label: "F2", dependsOn: [`${stepId}.${f1}`] });
+    store.duplicateStep(stepId);
+    const cloned = useBuilderStore.getState().schema.steps[1];
+    const clonedF2 = cloned.fields[1];
+    // The dependsOn should reference the cloned step + cloned f1 id, not the original
+    expect(clonedF2.dependsOn?.[0]).not.toBe(`${stepId}.${f1}`);
+    expect(clonedF2.dependsOn?.[0]).toContain(cloned.id);
+  });
+
+  it("selects the new step and marks isDirty", () => {
+    const store = useBuilderStore.getState();
+    const id = store.addStep({ title: "Original" });
+    store.duplicateStep(id);
+    const state = useBuilderStore.getState();
+    expect(state.selectedStepId).not.toBe(id);
+    expect(state.isDirty).toBe(true);
+  });
+
+  it("does nothing for unknown stepId", () => {
+    useBuilderStore.getState().addStep();
+    useBuilderStore.getState().duplicateStep("nonexistent");
+    expect(useBuilderStore.getState().schema.steps).toHaveLength(1);
+  });
+});
+
 describe("reorderSteps", () => {
   it("moves a step from one index to another", () => {
     const store = useBuilderStore.getState();
@@ -193,6 +262,57 @@ describe("removeField", () => {
     const fieldId = useBuilderStore.getState().addField(stepId);
     useBuilderStore.getState().removeField(stepId, fieldId);
     expect(useBuilderStore.getState().selectedFieldId).toBeNull();
+  });
+});
+
+describe("duplicateField", () => {
+  it("inserts the clone right after the original", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    const f1 = store.addField(stepId, { label: "A" });
+    const f2 = store.addField(stepId, { label: "B" });
+    store.duplicateField(stepId, f1);
+    const ids = useBuilderStore.getState().schema.steps[0].fields.map((f) => f.id);
+    expect(ids[0]).toBe(f1);
+    expect(ids[2]).toBe(f2);
+    expect(ids).toHaveLength(3);
+  });
+
+  it("clones field with a new id", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    const fieldId = store.addField(stepId, { label: "Name" });
+    store.duplicateField(stepId, fieldId);
+    const fields = useBuilderStore.getState().schema.steps[0].fields;
+    expect(fields[0].id).toBe(fieldId);
+    expect(fields[1].id).not.toBe(fieldId);
+  });
+
+  it("appends '(copy)' to the label", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    const fieldId = store.addField(stepId, { label: "Email" });
+    store.duplicateField(stepId, fieldId);
+    const fields = useBuilderStore.getState().schema.steps[0].fields;
+    expect(fields[1].label).toBe("Email (copy)");
+  });
+
+  it("selects the new field and marks isDirty", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    const fieldId = store.addField(stepId, { label: "X" });
+    store.duplicateField(stepId, fieldId);
+    const state = useBuilderStore.getState();
+    expect(state.selectedFieldId).not.toBe(fieldId);
+    expect(state.isDirty).toBe(true);
+  });
+
+  it("does nothing for unknown fieldId", () => {
+    const store = useBuilderStore.getState();
+    const stepId = store.addStep();
+    store.addField(stepId, { label: "A" });
+    store.duplicateField(stepId, "nonexistent");
+    expect(useBuilderStore.getState().schema.steps[0].fields).toHaveLength(1);
   });
 });
 

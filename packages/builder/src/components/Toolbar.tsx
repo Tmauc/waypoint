@@ -6,9 +6,10 @@ interface ToolbarProps {
   previewMode?: boolean;
   onTest?: () => void;
   isMobile?: boolean;
+  readOnly?: boolean;
 }
 
-export function Toolbar({ onSave, previewMode, onTest, isMobile }: ToolbarProps) {
+export function Toolbar({ onSave, previewMode, onTest, isMobile, readOnly }: ToolbarProps) {
   const { schema, isDirty, resetSchema } = useBuilderStore();
 
   const handleExport = () => {
@@ -93,18 +94,23 @@ export function Toolbar({ onSave, previewMode, onTest, isMobile }: ToolbarProps)
       </div>
 
       <div style={styles.right}>
-        {onTest && (
+        {readOnly && (
+          <span style={styles.readOnlyBadge}>View only</span>
+        )}
+        {!readOnly && onTest && (
           <button style={{ ...styles.btn, ...styles.testBtn }} onClick={onTest} title="Tester">
             {isMobile ? "▶" : "▶ Tester"}
           </button>
         )}
-        <button style={styles.btn} onClick={handleImport} title="Import">
-          {isMobile ? "↓" : "Import"}
-        </button>
+        {!readOnly && (
+          <button style={styles.btn} onClick={handleImport} title="Import">
+            {isMobile ? "↓" : "Import"}
+          </button>
+        )}
         <button style={styles.btn} onClick={handleExport} title="Export JSON">
           {isMobile ? "↑" : "Export JSON"}
         </button>
-        {onSave && (
+        {!readOnly && onSave && (
           <button
             style={{ ...styles.btn, ...styles.saveBtn }}
             onClick={() => onSave(schema)}
@@ -113,15 +119,17 @@ export function Toolbar({ onSave, previewMode, onTest, isMobile }: ToolbarProps)
             {isMobile ? "✓" : "Save"}
           </button>
         )}
-        <button
-          style={{ ...styles.btn, color: "var(--wp-danger)" }}
-          title="Reset"
-          onClick={() => {
-            if (confirm("Reset the journey? All changes will be lost.")) resetSchema();
-          }}
-        >
-          {isMobile ? "⟳" : "Reset"}
-        </button>
+        {!readOnly && (
+          <button
+            style={{ ...styles.btn, color: "var(--wp-danger)" }}
+            title="Reset"
+            onClick={() => {
+              if (confirm("Reset the journey? All changes will be lost.")) resetSchema();
+            }}
+          >
+            {isMobile ? "⟳" : "Reset"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -152,6 +160,11 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer", fontWeight: 500,
   },
   saveBtn: { background: "var(--wp-primary)", color: "var(--wp-canvas)", border: "1px solid var(--wp-primary)" },
+  readOnlyBadge: {
+    fontSize: 11, fontWeight: 600, color: "var(--wp-text-subtle)",
+    background: "var(--wp-surface)", border: "1px solid var(--wp-border)",
+    borderRadius: "var(--wp-radius)", padding: "3px 8px",
+  },
   testBtn: { background: "var(--wp-success, #22c55e)", color: "#fff", border: "1px solid var(--wp-success, #22c55e)", fontWeight: 600 },
   editBtn: { background: "transparent", color: "var(--wp-toolbar-text)", border: "none", fontWeight: 600, cursor: "pointer", fontSize: 13, padding: "5px 0" },
 };

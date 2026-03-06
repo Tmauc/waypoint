@@ -47,7 +47,8 @@ interface FieldDefinition {
   label: string;
   placeholder?: string;
   defaultValue?: unknown;
-  options?: SelectOption[];      // for select / multiselect / radio
+  options?: SelectOption[];      // for select / multiselect / radio (hardcoded)
+  externalEnumId?: string;       // reference to an ExternalEnum — options resolved at runtime
   validation?: ValidationRule[];
   visibleWhen?: ConditionGroup;  // field-level visibility
   dependsOn?: string[];          // dot-paths that must have values before this field is shown
@@ -77,12 +78,27 @@ Custom types: `type FieldType = BuiltinFieldType | (string & {})` — register c
 
 ```typescript
 interface ValidationRule {
-  type: "required" | "min" | "max" | "minLength" | "maxLength"
-      | "email" | "url" | "regex" | "custom";
-  value?: string | number;        // for min/max/length/regex
+  type: ValidationRuleType;
+  value?: string | number;        // for rules that take a value
   message: string;                // shown to the user on error
   customValidatorId?: string;     // id registered via registerCustomValidator()
 }
+
+type ValidationRuleType =
+  | "required"                    // non-empty
+  | "min" | "max"                 // numeric bounds (inclusive)
+  | "minLength" | "maxLength"     // string length bounds
+  | "email" | "url"               // format checks
+  | "regex"                       // value is a regex string
+  // Value comparators (value = the threshold or expected value)
+  | "equals" | "notEquals"
+  | "greaterThan" | "greaterThanOrEqual"
+  | "lessThan"    | "lessThanOrEqual"
+  | "contains"    | "notContains"
+  | "matches"                     // regex string
+  // Enum membership (value = ExternalEnum.id)
+  | "inEnum" | "notInEnum"
+  | "custom";                     // requires customValidatorId + registerCustomValidator()
 ```
 
 ### ConditionGroup
@@ -106,8 +122,35 @@ type ConditionOperator =
   | "contains" | "notContains"
   | "in" | "notIn"
   | "exists" | "notExists"
-  | "matches";                    // regex string in value
+  | "matches"                     // regex string in value
+  | "inEnum" | "notInEnum";       // value = ExternalEnum.id — resolved against externalEnums at runtime
 ```
+
+### ExternalEnum
+
+```typescript
+interface ExternalEnum {
+  id: string;
+  label: string;
+  values: SelectOption[];  // { label: string; value: string | number }[]
+}
+```
+
+App-provided option lists. **Not stored in the schema** — only `externalEnumId` references are stored. Actual values injected at runtime via `WaypointBuilder.externalEnums` / `WaypointRunner.externalEnums`. Pass to `resolveTree` as 4th param to populate `ResolvedField.resolvedOptions` and to evaluate `inEnum`/`notInEnum` conditions.
+
+### CustomTypeDefinition
+
+```typescript
+interface CustomTypeDefinition {
+  id: string;                          // stored as field.type in the schema
+  label: string;                       // shown in the builder type dropdown
+  icon?: string;                       // builder display
+  defaultValidation?: ValidationRule[]; // auto-applied when type is selected in builder
+  metadata?: Record<string, unknown>;  // passed through to your runtime renderer
+}
+```
+
+App-specific field types extending the built-in set. Pass to `WaypointBuilder.appCustomTypes` and `WaypointRunner.customFieldTypes`. The schema stores `field.type = "my-custom-id"`. At runtime check `field.definition.type` to delegate rendering.
 
 ### ExternalVariable
 
@@ -194,6 +237,18 @@ Used by `WaypointRunner` to decide `resume()` vs `init()`.
 
 ## Tree Resolver
 
+### ExternalEnum
+
+```typescript
+interface ExternalEnum {
+  id: string;
+  label: string;
+  values: SelectOption[];
+}
+```
+
+App-provided option lists. Fields reference them via `externalEnumId`. Actual values injected at runtime (not stored in schema). Pass to `resolveTree` as 4th parameter or to `WaypointBuilder`/`WaypointRunner` as `externalEnums` prop.
+
 ### resolveTree()
 
 Pure function. Evaluates all `visibleWhen` conditions and returns the visible tree.
@@ -202,6 +257,8 @@ Pure function. Evaluates all `visibleWhen` conditions and returns the visible tr
 import { resolveTree } from "@waypointjs/core";
 
 const tree = resolveTree(schema, data, externalVars);
+// or with external enum resolution:
+const tree = resolveTree(schema, data, externalVars, externalEnums);
 // Returns ResolvedTree
 ```
 
@@ -222,6 +279,7 @@ interface ResolvedField {
   definition: FieldDefinition;
   visible: boolean;                  // after field-level visibleWhen
   dependenciesMet: boolean;          // all dependsOn paths have values
+  resolvedOptions?: SelectOption[];  // populated when field.externalEnumId matches a provided enum
 }
 ```
 
@@ -268,23 +326,30 @@ Converts `ResolvedField[]` into a Zod object schema. Used internally by `useWayp
 ```typescript
 import { buildZodSchema } from "@waypointjs/core";
 
-const zodSchema = buildZodSchema(fields);  // z.ZodTypeAny (ZodObject at runtime)
+// Without external enums
+const zodSchema = buildZodSchema(fields);
+// With external enums (required for inEnum / notInEnum rules to resolve)
+const zodSchema = buildZodSchema(fields, externalEnums);
+
 const result = zodSchema.safeParse(formValues);
 ```
 
 Validation rule → Zod mapping:
 
-| Rule | Zod |
-|---|---|
-| `required` | `.min(1, message)` (string) / `.nonempty()` (array) |
-| `minLength` | `.min(value, message)` |
-| `maxLength` | `.max(value, message)` |
-| `email` | `.email(message)` |
-| `url` | `.url(message)` |
-| `regex` | `.regex(new RegExp(value), message)` |
-| `min` | `.gte(value, message)` (number) |
-| `max` | `.lte(value, message)` (number) |
-| `custom` | `.refine(fn, message)` via registered validator |
+| Rule | Applies to | Zod |
+|---|---|---|
+| `required` | string/array | `.min(1, message)` |
+| `minLength` | string | `.min(value, message)` |
+| `maxLength` | string | `.max(value, message)` |
+| `email` | string | `.email(message)` |
+| `url` | string | `.url(message)` |
+| `regex` / `matches` | string | `.regex(new RegExp(value), message)` |
+| `min` / `greaterThanOrEqual` | number | `.gte(value, message)` |
+| `max` / `lessThanOrEqual` | number | `.lte(value, message)` |
+| `greaterThan` | number | `.gt(value, message)` |
+| `lessThan` | number | `.lt(value, message)` |
+| `equals` `notEquals` `contains` `notContains` `inEnum` `notInEnum` | any | `.refine(fn, message)` |
+| `custom` | any | `.refine(fn, message)` via registered validator |
 
 ### registerCustomValidator()
 
@@ -306,11 +371,11 @@ registerCustomValidator("sirenFormat", (value) => {
 ```typescript
 import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypointjs/core";
 
-// Evaluate a ConditionGroup (returns false if group is undefined)
-evaluateConditionGroup(group, data, externalVars)  // boolean
+// Pass externalEnums to support inEnum / notInEnum operators
+evaluateConditionGroup(group, data, externalVars, externalEnums?)  // boolean
 
 // Shorthand — undefined group always returns true (always visible)
-isVisible(group, data, externalVars)               // boolean
+isVisible(group, data, externalVars, externalEnums?)               // boolean
 
 // Resolve a dot-path to its value
 resolveFieldValue("personal.email", data, externalVars)  // unknown

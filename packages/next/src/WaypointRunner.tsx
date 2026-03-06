@@ -10,7 +10,7 @@ import {
   resolveTree,
   findLastValidStep,
 } from "@waypointjs/core";
-import type { WaypointSchema, WaypointRuntimeStore } from "@waypointjs/core";
+import type { WaypointSchema, WaypointRuntimeStore, CustomTypeDefinition, ExternalEnum } from "@waypointjs/core";
 
 import { WaypointRuntimeContext } from "./context";
 
@@ -33,6 +33,10 @@ export interface WaypointRunnerProps {
   ) => void | Promise<void>;
   /** Called whenever any field value changes */
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  /** App-provided custom field types — exposed via context for custom field rendering */
+  customFieldTypes?: CustomTypeDefinition[];
+  /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions */
+  externalEnums?: ExternalEnum[];
   children: React.ReactNode;
 }
 
@@ -76,6 +80,8 @@ export function WaypointRunner({
   onComplete,
   onStepComplete,
   onDataChange,
+  customFieldTypes,
+  externalEnums,
   children,
 }: WaypointRunnerProps) {
   const router = useRouter();
@@ -121,7 +127,7 @@ export function WaypointRunner({
         // Navigate to the persisted step
         const state = store.getState();
         if (state.currentStepId) {
-          const tree = resolveTree(schema, state.data, state.externalVars);
+          const tree = resolveTree(schema, state.data, state.externalVars, externalEnums);
           const step = tree.steps.find(
             (s) => s.definition.id === state.currentStepId
           );
@@ -153,7 +159,7 @@ export function WaypointRunner({
       // Deep-link resume: if the user already has data, redirect to the last
       // valid step instead of forcing them back to step 1.
       const state = store.getState();
-      const tree = resolveTree(schema, state.data, state.externalVars);
+      const tree = resolveTree(schema, state.data, state.externalVars, externalEnums);
       const lastValid = findLastValidStep(tree.steps, state.data, state.externalVars);
 
       if (lastValid && lastValid.definition.url !== pathname) {
@@ -183,9 +189,11 @@ export function WaypointRunner({
       onComplete,
       onStepComplete,
       onDataChange,
+      customFieldTypes,
+      externalEnums,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schema, store]
+    [schema, store, externalEnums]
   );
 
   // Show a blocking error if required external variables are missing after init

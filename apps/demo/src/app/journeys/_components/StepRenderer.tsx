@@ -56,6 +56,40 @@ function Field({
     );
   }
 
+  if (type === "radio") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {options?.map((o) => (
+            <label key={String(o.value)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>
+              <input type="radio" value={String(o.value)} {...register(id)} style={{ accentColor: "#a78bfa" }} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+        {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0 }}>{error}</p>}
+      </div>
+    );
+  }
+
+  if (type === "multiselect") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {options?.map((o) => (
+            <label key={String(o.value)} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>
+              <input type="checkbox" value={String(o.value)} {...register(id)} style={{ width: 16, height: 16, accentColor: "#a78bfa", cursor: "pointer" }} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+        {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0 }}>{error}</p>}
+      </div>
+    );
+  }
+
   if (type === "checkbox") {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { FieldDefinition } from "./schema";
+import type { ExternalEnum, FieldDefinition } from "./schema";
 import type { ResolvedField } from "./tree-resolver";
 
 // ---------------------------------------------------------------------------
@@ -24,7 +24,7 @@ export function registerCustomValidator(
 // Field schema builder
 // ---------------------------------------------------------------------------
 
-function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
+function buildFieldSchema(field: FieldDefinition, externalEnums?: ExternalEnum[]): z.ZodTypeAny {
   const rules = field.validation ?? [];
   const isRequired = rules.some((r) => r.type === "required");
   const isNumeric = field.type === "number";
@@ -47,12 +47,24 @@ function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
     });
 
     for (const rule of rules) {
-      if (rule.type === "min") {
+      if (rule.type === "min" || rule.type === "greaterThanOrEqual") {
         const n = Number(rule.value);
         if (!isNaN(n)) numSchema = numSchema.gte(n, rule.message) as typeof numSchema;
-      } else if (rule.type === "max") {
+      } else if (rule.type === "max" || rule.type === "lessThanOrEqual") {
         const n = Number(rule.value);
         if (!isNaN(n)) numSchema = numSchema.lte(n, rule.message) as typeof numSchema;
+      } else if (rule.type === "greaterThan") {
+        const n = Number(rule.value);
+        if (!isNaN(n)) numSchema = numSchema.gt(n, rule.message) as typeof numSchema;
+      } else if (rule.type === "lessThan") {
+        const n = Number(rule.value);
+        if (!isNaN(n)) numSchema = numSchema.lt(n, rule.message) as typeof numSchema;
+      } else if (rule.type === "equals") {
+        const n = Number(rule.value);
+        if (!isNaN(n)) numSchema = numSchema.refine((v) => v === n, rule.message) as unknown as typeof numSchema;
+      } else if (rule.type === "notEquals") {
+        const n = Number(rule.value);
+        if (!isNaN(n)) numSchema = numSchema.refine((v) => v !== n, rule.message) as unknown as typeof numSchema;
       }
     }
 
@@ -63,7 +75,7 @@ function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
   // then apply .refine() transforms last (they return ZodEffects, not ZodString).
   let strSchema = z.string();
 
-  const refineRules: Array<{ id: string; message: string }> = [];
+  const refineRules: Array<{ fn: (v: unknown) => boolean; message: string }> = [];
 
   for (const rule of rules) {
     switch (rule.type) {
@@ -91,9 +103,81 @@ function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
           strSchema = strSchema.regex(new RegExp(String(rule.value)), rule.message);
         }
         break;
+      case "equals":
+        if (rule.value !== undefined) {
+          const eq = String(rule.value);
+          refineRules.push({ fn: (v: unknown) => String(v) === eq, message: rule.message });
+        }
+        break;
+      case "notEquals":
+        if (rule.value !== undefined) {
+          const neq = String(rule.value);
+          refineRules.push({ fn: (v: unknown) => String(v) !== neq, message: rule.message });
+        }
+        break;
+      case "greaterThan":
+        if (rule.value !== undefined) {
+          const gt = Number(rule.value);
+          refineRules.push({ fn: (v: unknown) => Number(v) > gt, message: rule.message });
+        }
+        break;
+      case "greaterThanOrEqual":
+        if (rule.value !== undefined) {
+          const gte = Number(rule.value);
+          refineRules.push({ fn: (v: unknown) => Number(v) >= gte, message: rule.message });
+        }
+        break;
+      case "lessThan":
+        if (rule.value !== undefined) {
+          const lt = Number(rule.value);
+          refineRules.push({ fn: (v: unknown) => Number(v) < lt, message: rule.message });
+        }
+        break;
+      case "lessThanOrEqual":
+        if (rule.value !== undefined) {
+          const lte = Number(rule.value);
+          refineRules.push({ fn: (v: unknown) => Number(v) <= lte, message: rule.message });
+        }
+        break;
+      case "contains":
+        if (rule.value !== undefined) {
+          const sub = String(rule.value);
+          refineRules.push({ fn: (v: unknown) => String(v).includes(sub), message: rule.message });
+        }
+        break;
+      case "notContains":
+        if (rule.value !== undefined) {
+          const nsub = String(rule.value);
+          refineRules.push({ fn: (v: unknown) => !String(v).includes(nsub), message: rule.message });
+        }
+        break;
+      case "matches":
+        if (rule.value !== undefined && rule.value !== null) {
+          const rx = new RegExp(String(rule.value));
+          refineRules.push({ fn: (v: unknown) => rx.test(String(v)), message: rule.message });
+        }
+        break;
+      case "inEnum":
+        if (rule.value && externalEnums) {
+          const enumDef = externalEnums.find((e) => e.id === String(rule.value));
+          if (enumDef) {
+            const values = enumDef.values.map((v) => String(v.value));
+            refineRules.push({ fn: (v: unknown) => values.includes(String(v)), message: rule.message });
+          }
+        }
+        break;
+      case "notInEnum":
+        if (rule.value && externalEnums) {
+          const enumDef = externalEnums.find((e) => e.id === String(rule.value));
+          if (enumDef) {
+            const values = enumDef.values.map((v) => String(v.value));
+            refineRules.push({ fn: (v: unknown) => !values.includes(String(v)), message: rule.message });
+          }
+        }
+        break;
       case "custom":
         if (rule.customValidatorId && customValidatorRegistry[rule.customValidatorId]) {
-          refineRules.push({ id: rule.customValidatorId, message: rule.message });
+          refineRules.push({ fn: (v: unknown) => Boolean(customValidatorRegistry[rule.customValidatorId!]?.(v)), message: rule.message });
         }
         break;
     }
@@ -103,11 +187,8 @@ function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
   let finalSchema: z.ZodTypeAny = isRequired ? strSchema : strSchema.optional();
 
   // Append custom .refine() calls (return ZodEffects, safe as ZodTypeAny)
-  for (const { id, message } of refineRules) {
-    finalSchema = finalSchema.refine(
-      (val) => Boolean(customValidatorRegistry[id]?.(val)),
-      message
-    );
+  for (const { fn, message } of refineRules) {
+    finalSchema = finalSchema.refine(fn, message);
   }
 
   return finalSchema;
@@ -125,13 +206,14 @@ function buildFieldSchema(field: FieldDefinition): z.ZodTypeAny {
  * - Numeric fields use `z.coerce.number()` so string inputs are coerced.
  */
 export function buildZodSchema(
-  fields: ResolvedField[]
+  fields: ResolvedField[],
+  externalEnums?: ExternalEnum[]
 ): z.ZodObject<z.ZodRawShape> {
   const shape: z.ZodRawShape = {};
 
   for (const resolvedField of fields) {
     if (!resolvedField.visible) continue;
-    shape[resolvedField.definition.id] = buildFieldSchema(resolvedField.definition);
+    shape[resolvedField.definition.id] = buildFieldSchema(resolvedField.definition, externalEnums);
   }
 
   return z.object(shape);

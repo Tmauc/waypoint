@@ -19,7 +19,7 @@ import { useWaypoint } from "@waypointjs/react";
 import type { StoreApi } from "zustand";
 import type { WaypointRuntimeStore } from "@waypointjs/core";
 
-const state = useWaypoint(store);
+const state = useWaypoint(store, externalEnums);
 ```
 
 ### Parameters
@@ -27,6 +27,7 @@ const state = useWaypoint(store);
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `store` | `StoreApi<WaypointRuntimeStore>` | Store instance from `createRuntimeStore()` |
+| `externalEnums?` | `ExternalEnum[]` | Optional enums for `inEnum`/`notInEnum` conditions and field `resolvedOptions` |
 
 ### Return value — WaypointState
 
@@ -64,6 +65,7 @@ interface WaypointState {
 - `currentStep`, `nextStep`, `previousStep` are derived from `tree.steps` and `currentStepId`.
 - `isFirstStep` = `previousStep === undefined`, `isLastStep` = `nextStep === undefined`.
 - `missingExternalVars` = blocking external variables without values (from `tree.missingExternalVars`).
+- Pass `externalEnums` to enable `inEnum`/`notInEnum` visibility conditions and populate `resolvedOptions` on fields with `externalEnumId`.
 
 ### Example — shell component
 
@@ -139,7 +141,7 @@ interface WaypointHeadlessStep {
 - `fields` contains only visible fields (after `visibleWhen` evaluation).
 - `stepData` is `store.data[stepId] ?? {}` — the raw stored values.
 - Call `setFieldValue` for single field updates; `setStepData` to bulk-replace step data.
-- You are responsible for validation and navigation — use `buildZodSchema(fields)` from `@waypointjs/core` if needed.
+- You are responsible for validation and navigation — use `buildZodSchema(fields, externalEnums?)` from `@waypointjs/core` if needed.
 
 ### Example — step component
 

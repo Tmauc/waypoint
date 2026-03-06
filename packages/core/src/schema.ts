@@ -22,7 +22,9 @@ export type ConditionOperator =
   | "notIn"
   | "exists"
   | "notExists"
-  | "matches"; // regex
+  | "matches" // regex
+  | "inEnum"
+  | "notInEnum";
 
 // ---------------------------------------------------------------------------
 // Conditions
@@ -62,7 +64,19 @@ export type ValidationRuleType =
   | "email"
   | "url"
   | "regex"
-  | "custom";
+  | "custom"
+  // Value comparators
+  | "equals"
+  | "notEquals"
+  | "greaterThan"
+  | "greaterThanOrEqual"
+  | "lessThan"
+  | "lessThanOrEqual"
+  | "contains"
+  | "notContains"
+  | "matches"
+  | "inEnum"
+  | "notInEnum";
 
 export interface ValidationRule {
   type: ValidationRuleType;
@@ -115,8 +129,10 @@ export interface FieldDefinition {
   label: string;
   placeholder?: string;
   defaultValue?: unknown;
-  /** Options for select/multiselect/radio fields */
+  /** Options for select/multiselect/radio fields (hardcoded) */
   options?: SelectOption[];
+  /** Reference to an external enum — options resolved at runtime from app-provided enums */
+  externalEnumId?: string;
   validation?: ValidationRule[];
   /** Controls visibility of this field within its step */
   visibleWhen?: ConditionGroup;
@@ -153,6 +169,21 @@ export interface ExternalVariable {
   blocking: boolean;
   /** Steps / fields that depend on this variable — informational, used by the builder */
   usedIn?: Array<{ stepId: string; fieldId?: string }>;
+}
+
+// ---------------------------------------------------------------------------
+// External enums (app-provided option lists)
+// ---------------------------------------------------------------------------
+
+/**
+ * An externally-provided list of options for select/multiselect/radio fields.
+ * The actual values are injected at runtime (builder prop / runner prop) so
+ * the schema only stores a reference (`externalEnumId`).
+ */
+export interface ExternalEnum {
+  id: string;
+  label: string;
+  values: SelectOption[];
 }
 
 // ---------------------------------------------------------------------------

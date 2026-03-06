@@ -37,6 +37,7 @@ export interface BuilderActions {
   addStep: (step?: Partial<Omit<StepDefinition, "id">>) => string;
   updateStep: (stepId: string, updates: Partial<Omit<StepDefinition, "id">>) => void;
   removeStep: (stepId: string) => void;
+  duplicateStep: (stepId: string) => void;
   reorderSteps: (fromIndex: number, toIndex: number) => void;
   selectStep: (stepId: string | null) => void;
 
@@ -44,6 +45,7 @@ export interface BuilderActions {
   addField: (stepId: string, field?: Partial<Omit<FieldDefinition, "id">>) => string;
   updateField: (stepId: string, fieldId: string, updates: Partial<Omit<FieldDefinition, "id">>) => void;
   removeField: (stepId: string, fieldId: string) => void;
+  duplicateField: (stepId: string, fieldId: string) => void;
   reorderFields: (stepId: string, fromIndex: number, toIndex: number) => void;
   selectField: (fieldId: string | null) => void;
 
@@ -149,6 +151,53 @@ export const useBuilderStore = create<BuilderStore>((set, _get) => ({
       isDirty: true,
     })),
 
+  duplicateStep: (stepId) => {
+    const state = _get();
+    const step = state.schema.steps.find((s) => s.id === stepId);
+    if (!step) return;
+
+    const newStepId = generateId("step");
+
+    // Map old field IDs → new field IDs
+    const fieldIdMap: Record<string, string> = {};
+    for (const f of step.fields) {
+      fieldIdMap[f.id] = generateId("field");
+    }
+
+    // Clone fields with new IDs and remap intra-step dependsOn
+    const newFields = step.fields.map((f) => ({
+      ...f,
+      id: fieldIdMap[f.id],
+      dependsOn: f.dependsOn?.map((dep) => {
+        if (dep.startsWith(`${stepId}.`)) {
+          const oldFieldId = dep.slice(stepId.length + 1);
+          const newFieldId = fieldIdMap[oldFieldId];
+          return newFieldId ? `${newStepId}.${newFieldId}` : dep;
+        }
+        return dep;
+      }),
+    }));
+
+    const newStep: StepDefinition = {
+      ...step,
+      id: newStepId,
+      title: `${step.title} (copy)`,
+      url: `${step.url}-copy`,
+      fields: newFields,
+    };
+
+    const stepIndex = state.schema.steps.findIndex((s) => s.id === stepId);
+    const newSteps = [...state.schema.steps];
+    newSteps.splice(stepIndex + 1, 0, newStep);
+
+    set({
+      schema: { ...state.schema, steps: newSteps },
+      selectedStepId: newStepId,
+      selectedFieldId: null,
+      isDirty: true,
+    });
+  },
+
   reorderSteps: (fromIndex, toIndex) =>
     set((s) => {
       const steps = [...s.schema.steps];
@@ -216,6 +265,36 @@ export const useBuilderStore = create<BuilderStore>((set, _get) => ({
       selectedFieldId: s.selectedFieldId === fieldId ? null : s.selectedFieldId,
       isDirty: true,
     })),
+
+  duplicateField: (stepId, fieldId) => {
+    const state = _get();
+    const step = state.schema.steps.find((s) => s.id === stepId);
+    if (!step) return;
+    const field = step.fields.find((f) => f.id === fieldId);
+    if (!field) return;
+
+    const newFieldId = generateId("field");
+    const newField: FieldDefinition = {
+      ...field,
+      id: newFieldId,
+      label: `${field.label} (copy)`,
+    };
+
+    const fieldIndex = step.fields.findIndex((f) => f.id === fieldId);
+    const newFields = [...step.fields];
+    newFields.splice(fieldIndex + 1, 0, newField);
+
+    set((s) => ({
+      schema: {
+        ...s.schema,
+        steps: s.schema.steps.map((st) =>
+          st.id === stepId ? { ...st, fields: newFields } : st
+        ),
+      },
+      selectedFieldId: newFieldId,
+      isDirty: true,
+    }));
+  },
 
   reorderFields: (stepId, fromIndex, toIndex) =>
     set((s) => ({

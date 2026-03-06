@@ -3,6 +3,7 @@
 import type { ExternalVariable } from "@waypointjs/core";
 import { useState } from "react";
 import { useBuilderStore } from "../store/builder-store";
+import { useBuilderReadOnly } from "../context";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,7 @@ export function ExternalVariablePanel() {
     updateExternalVariable,
     removeExternalVariable,
   } = useBuilderStore();
+  const readOnly = useBuilderReadOnly();
   const variables = schema.externalVariables ?? [];
 
   const [isAdding, setIsAdding] = useState(false);
@@ -129,7 +131,7 @@ export function ExternalVariablePanel() {
       {/* Header */}
       <div style={headerStyle}>
         <span style={titleStyle}>External Variables</span>
-        {!isAdding && (
+        {!readOnly && !isAdding && (
           <button
             style={addBtnStyle}
             onClick={startAdd}
@@ -197,18 +199,20 @@ export function ExternalVariablePanel() {
                     </div>
                   )}
                 </div>
-                <div style={varActionsStyle}>
-                  <button style={actionBtnStyle} onClick={() => startEdit(v)}>
-                    Edit
-                  </button>
-                  <button
-                    style={{ ...actionBtnStyle, color: "#ef4444" }}
-                    title="Remove variable"
-                    onClick={() => remove(v.id)}
-                  >
-                    ✕
-                  </button>
-                </div>
+                {!readOnly && (
+                  <div style={varActionsStyle}>
+                    <button style={actionBtnStyle} onClick={() => startEdit(v)}>
+                      Edit
+                    </button>
+                    <button
+                      style={{ ...actionBtnStyle, color: "#ef4444" }}
+                      title="Remove variable"
+                      onClick={() => remove(v.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

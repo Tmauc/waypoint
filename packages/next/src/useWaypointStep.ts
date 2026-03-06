@@ -61,7 +61,7 @@ export interface WaypointStepReturn {
  * const { form, fields, handleSubmit, progress } = useWaypointStep();
  */
 export function useWaypointStep(): WaypointStepReturn {
-  const { schema, store, onComplete, onStepComplete, onDataChange } =
+  const { schema, store, onComplete, onStepComplete, onDataChange, externalEnums } =
     useWaypointRuntimeContext();
   const router = useRouter();
   const pathname = usePathname();
@@ -79,8 +79,8 @@ export function useWaypointStep(): WaypointStepReturn {
 
   // Resolve the full tree
   const tree = useMemo(
-    () => resolveTree(schema, data, externalVars),
-    [schema, data, externalVars]
+    () => resolveTree(schema, data, externalVars, externalEnums),
+    [schema, data, externalVars, externalEnums]
   );
 
   // Find the step matching the current pathname
@@ -171,7 +171,7 @@ export function useWaypointStep(): WaypointStepReturn {
 
       // 5. Re-resolve tree with updated data — step visibility may have changed
       const allData = store.getState().data;
-      const updatedTree = resolveTree(schema, allData, externalVars);
+      const updatedTree = resolveTree(schema, allData, externalVars, externalEnums);
       const newVisibleIds = updatedTree.steps.map((s) => s.definition.id).join(",");
 
       // 6. If the visible tree changed, truncate stale forward history
@@ -206,6 +206,7 @@ export function useWaypointStep(): WaypointStepReturn {
     schema,
     tree.steps,
     externalVars,
+    externalEnums,
     onDataChange,
     onStepComplete,
     onComplete,

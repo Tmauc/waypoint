@@ -1,6 +1,7 @@
 "use client";
 
 import { type ConditionGroup, type ConditionOperator, type ConditionRule } from "@waypointjs/core";
+import { useBuilderExternalEnums } from "../context";
 import { useAllFieldPaths } from "../hooks/useAllFieldPaths";
 
 const OPERATORS: { value: ConditionOperator; label: string; hasValue: boolean }[] = [
@@ -17,7 +18,9 @@ const OPERATORS: { value: ConditionOperator; label: string; hasValue: boolean }[
   { value: "matches", label: "matches regex", hasValue: true },
   { value: "exists", label: "exists", hasValue: false },
   { value: "notExists", label: "not exists", hasValue: false },
-];
+  { value: "inEnum", label: "is in enum", hasValue: true, isEnum: true },
+  { value: "notInEnum", label: "not in enum", hasValue: true, isEnum: true },
+] as { value: ConditionOperator; label: string; hasValue: boolean; isEnum?: boolean }[];
 
 interface ConditionBuilderProps {
   value: ConditionGroup | undefined;
@@ -33,6 +36,7 @@ export function ConditionBuilder({
   excludeFieldId,
 }: ConditionBuilderProps) {
   const allPaths = useAllFieldPaths(excludeStepId, excludeFieldId);
+  const externalEnums = useBuilderExternalEnums();
 
   const group: ConditionGroup = value ?? { combinator: "and", rules: [] };
 
@@ -116,14 +120,50 @@ export function ConditionBuilder({
               ))}
             </select>
 
-            {/* Value */}
+            {/* Value — enum ref selector OR text input + optional enum value picker */}
             {opDef?.hasValue && (
-              <input
-                style={styles.valueInput}
-                placeholder="value"
-                value={rule.value != null ? String(rule.value) : ""}
-                onChange={(e) => updateRule(index, { value: e.target.value })}
-              />
+              opDef.isEnum ? (
+                <select
+                  style={{ ...styles.select, width: 140 }}
+                  value={rule.value != null ? String(rule.value) : ""}
+                  onChange={(e) => updateRule(index, { value: e.target.value })}
+                >
+                  <option value="">— pick enum —</option>
+                  {externalEnums.map((en) => (
+                    <option key={en.id} value={en.id}>{en.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={styles.valueGroup}>
+                  <input
+                    style={styles.valueInput}
+                    placeholder="value"
+                    value={rule.value != null ? String(rule.value) : ""}
+                    onChange={(e) => updateRule(index, { value: e.target.value })}
+                  />
+                  {externalEnums.length > 0 && (
+                    <select
+                      style={styles.enumPicker}
+                      title="Pick a value from an enum"
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) updateRule(index, { value: e.target.value });
+                      }}
+                    >
+                      <option value="">⊞</option>
+                      {externalEnums.map((en) => (
+                        <optgroup key={en.id} label={en.label}>
+                          {en.values.map((v) => (
+                            <option key={String(v.value)} value={String(v.value)}>
+                              {v.label} ({v.value})
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )
             )}
 
             <button style={styles.removeBtn} onClick={() => removeRule(index)}>✕</button>
@@ -185,6 +225,12 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid var(--wp-border-muted)", borderRadius: "var(--wp-radius)",
     cursor: "pointer", fontWeight: 500, alignSelf: "flex-start",
     color: "var(--wp-text-secondary)",
+  },
+  valueGroup: { display: "flex", alignItems: "center", gap: 4 },
+  enumPicker: {
+    fontSize: 11, padding: "4px 4px", border: "1px solid var(--wp-border-muted)",
+    borderRadius: "var(--wp-radius)", background: "var(--wp-canvas)", color: "var(--wp-primary)",
+    cursor: "pointer", flexShrink: 0,
   },
   preview: { marginTop: 4 },
   previewLabel: {

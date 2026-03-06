@@ -1,26 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { StoreApi } from "zustand";
 import { useWaypoint, useWaypointStep } from "@waypointjs/react";
 import type { WaypointRuntimeStore } from "@waypointjs/core";
 import { resolveTree, getNextStep, getPreviousStep } from "@waypointjs/core";
-import type { WaypointSchema } from "@waypointjs/core";
-import type { ResolvedField } from "@waypointjs/core";
+import type { ExternalEnum, WaypointSchema } from "@waypointjs/core";
+import type { ResolvedField, SelectOption } from "@waypointjs/core";
 import { DevPanel } from "@waypointjs/devtools";
 
 interface PreviewPanelProps {
   store: StoreApi<WaypointRuntimeStore>;
   schema: WaypointSchema;
+  externalEnums?: ExternalEnum[];
   onEdit?: () => void;
 }
 
-export function PreviewPanel({ store, schema }: PreviewPanelProps) {
+export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps) {
   const [done, setDone] = useState(false);
 
-  const { tree, currentStep, progress } = useWaypoint(store);
+  const { tree, currentStep, progress } = useWaypoint(store, externalEnums);
   const stepId = currentStep?.definition.id ?? "";
   const { fields, stepData, setFieldValue } = useWaypointStep(store, stepId);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // External variable mocks — initialized with defaults based on type
+  const extVarDefs = schema.externalVariables ?? [];
+  const [mockVars, setMockVars] = useState<Record<string, unknown>>(() => {
+    const initial: Record<string, unknown> = {};
+    for (const v of extVarDefs) {
+      initial[v.id] = v.type === "boolean" ? false : v.type === "number" ? 0 : "";
+    }
+    return initial;
+  });
+
+  // Sync mockVars → store whenever they change
+  useEffect(() => {
+    for (const [varId, value] of Object.entries(mockVars)) {
+      store.getState().setExternalVar(varId, value);
+    }
+  }, [mockVars]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleMockVarChange(varId: string, value: unknown) {
+    setMockVars((prev) => ({ ...prev, [varId]: value }));
+  }
 
   function handleNext() {
     // 1. Validate required fields
@@ -49,7 +71,7 @@ export function PreviewPanel({ store, schema }: PreviewPanelProps) {
 
     // 4. Re-resolve tree with new data
     const newData = store.getState().data;
-    const newTree = resolveTree(schema, newData, {});
+    const newTree = resolveTree(schema, newData, store.getState().externalVars, externalEnums);
     const newIds = newTree.steps.map((s) => s.definition.id).join(",");
 
     // 5. Truncate history if tree changed
@@ -73,6 +95,10 @@ export function PreviewPanel({ store, schema }: PreviewPanelProps) {
 
   function handleRestart() {
     store.getState().init(schema);
+    // Re-apply mock vars after init (init clears externalVars)
+    for (const [varId, value] of Object.entries(mockVars)) {
+      store.getState().setExternalVar(varId, value);
+    }
     setDone(false);
     setErrors({});
   }
@@ -91,6 +117,13 @@ export function PreviewPanel({ store, schema }: PreviewPanelProps) {
             currentIdx={currentIdx}
             onSelect={(id) => store.getState().setCurrentStep(id)}
           />
+          {extVarDefs.length > 0 && (
+            <MockVarPanel
+              extVarDefs={extVarDefs}
+              mockVars={mockVars}
+              onChange={handleMockVarChange}
+            />
+          )}
         </div>
         <div style={styles.divider} />
         <div style={styles.rightCol}>
@@ -113,13 +146,20 @@ export function PreviewPanel({ store, schema }: PreviewPanelProps) {
     <div style={styles.panel}>
       <DevPanel store={store} />
 
-      {/* Left column — step list */}
+      {/* Left column — step list + mock vars */}
       <div style={styles.leftCol}>
         <StepList
           tree={tree}
           currentIdx={currentIdx}
           onSelect={(id) => store.getState().setCurrentStep(id)}
         />
+        {extVarDefs.length > 0 && (
+          <MockVarPanel
+            extVarDefs={extVarDefs}
+            mockVars={mockVars}
+            onChange={handleMockVarChange}
+          />
+        )}
       </div>
 
       <div style={styles.divider} />
@@ -234,6 +274,59 @@ function StepList({ tree, currentIdx, onSelect }: StepListProps) {
 }
 
 // ---------------------------------------------------------------------------
+// MockVarPanel sub-component
+// ---------------------------------------------------------------------------
+
+import type { ExternalVariable } from "@waypointjs/core";
+
+interface MockVarPanelProps {
+  extVarDefs: ExternalVariable[];
+  mockVars: Record<string, unknown>;
+  onChange: (varId: string, value: unknown) => void;
+}
+
+function MockVarPanel({ extVarDefs, mockVars, onChange }: MockVarPanelProps) {
+  return (
+    <div style={styles.mockPanel}>
+      <div style={styles.mockPanelTitle}>
+        <span>⚡ External Variables</span>
+        <span style={styles.mockPanelHint}>mock values</span>
+      </div>
+      {extVarDefs.map((v) => (
+        <div key={v.id} style={styles.mockVarRow}>
+          <div style={styles.mockVarLabel}>
+            <span style={styles.mockVarId}>${`ext.${v.id}`}</span>
+            {v.blocking && <span style={styles.mockBlockingBadge}>!</span>}
+          </div>
+          {v.type === "boolean" ? (
+            <label style={styles.mockCheckRow}>
+              <input
+                type="checkbox"
+                checked={Boolean(mockVars[v.id])}
+                onChange={(e) => onChange(v.id, e.target.checked)}
+              />
+              <span style={{ fontSize: 11, color: "var(--wp-text-muted)" }}>
+                {String(mockVars[v.id])}
+              </span>
+            </label>
+          ) : (
+            <input
+              style={styles.mockInput}
+              type={v.type === "number" ? "number" : "text"}
+              value={String(mockVars[v.id] ?? "")}
+              placeholder={v.label}
+              onChange={(e) =>
+                onChange(v.id, v.type === "number" ? Number(e.target.value) : e.target.value)
+              }
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // FieldRenderer sub-component
 // ---------------------------------------------------------------------------
 
@@ -246,6 +339,7 @@ interface FieldRendererProps {
 
 function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
   const { definition } = field;
+  const options: SelectOption[] = field.resolvedOptions ?? definition.options ?? [];
   const inputStyle = { ...styles.input, ...(error ? styles.inputError : {}) };
 
   return (
@@ -289,7 +383,7 @@ function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
           onChange={(e) => onChange(e.target.value)}
         >
           <option value="">— Choisir —</option>
-          {definition.options?.map((opt) => (
+          {options.map((opt) => (
             <option key={String(opt.value)} value={String(opt.value)}>
               {opt.label}
             </option>
@@ -307,7 +401,7 @@ function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
             onChange(selected);
           }}
         >
-          {definition.options?.map((opt) => (
+          {options.map((opt) => (
             <option key={String(opt.value)} value={String(opt.value)}>
               {opt.label}
             </option>
@@ -317,7 +411,7 @@ function FieldRenderer({ field, value, error, onChange }: FieldRendererProps) {
 
       {definition.type === "radio" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {definition.options?.map((opt) => (
+          {options.map((opt) => (
             <label key={String(opt.value)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
               <input
                 type="radio"
@@ -520,6 +614,80 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase" as const,
     letterSpacing: "0.3px",
     flexShrink: 0,
+  },
+  // Mock var panel
+  mockPanel: {
+    borderTop: "1px solid var(--wp-border)",
+    padding: "12px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  mockPanelTitle: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--wp-text-muted)",
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.5px",
+    marginBottom: 4,
+  },
+  mockPanelHint: {
+    fontSize: 9,
+    fontWeight: 500,
+    color: "var(--wp-warning)",
+    textTransform: "none" as const,
+    background: "var(--wp-warning-bg)",
+    padding: "1px 5px",
+    borderRadius: 4,
+  },
+  mockVarRow: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 3,
+  },
+  mockVarLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  },
+  mockVarId: {
+    fontSize: 10,
+    fontFamily: "monospace",
+    fontWeight: 600,
+    color: "var(--wp-text-secondary)",
+  },
+  mockBlockingBadge: {
+    fontSize: 9,
+    fontWeight: 700,
+    width: 13,
+    height: 13,
+    borderRadius: "50%",
+    background: "var(--wp-danger-bg-strong)",
+    color: "var(--wp-danger)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  } as React.CSSProperties,
+  mockInput: {
+    fontSize: 11,
+    padding: "4px 6px",
+    border: "1px solid var(--wp-border-muted)",
+    borderRadius: "var(--wp-radius)",
+    background: "var(--wp-canvas)",
+    color: "var(--wp-text)",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box" as const,
+  },
+  mockCheckRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    cursor: "pointer",
   },
   // Done screen
   doneScreen: {

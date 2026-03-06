@@ -1,4 +1,4 @@
-import type { ExternalVariable, FieldDefinition, StepDefinition, WaypointSchema } from "./schema";
+import type { ExternalEnum, ExternalVariable, FieldDefinition, SelectOption, StepDefinition, WaypointSchema } from "./schema";
 import { type ExternalVars, type JourneyData, isVisible, resolveFieldValue } from "./conditions";
 
 // ---------------------------------------------------------------------------
@@ -12,6 +12,12 @@ export interface ResolvedField {
   visible: boolean;
   /** Whether all dependsOn paths have a non-empty value */
   dependenciesMet: boolean;
+  /**
+   * Resolved options from an external enum.
+   * Set when `definition.externalEnumId` matches an enum in the provided `externalEnums`.
+   * Use `field.resolvedOptions ?? field.definition.options` when rendering.
+   */
+  resolvedOptions?: SelectOption[];
 }
 
 /** A step after condition evaluation */
@@ -94,19 +100,28 @@ function findMissingBlockingVars(
 export function resolveTree(
   schema: WaypointSchema,
   data: JourneyData,
-  externalVars: ExternalVars
+  externalVars: ExternalVars,
+  externalEnums?: ExternalEnum[]
 ): ResolvedTree {
   const visibleSteps: ResolvedStep[] = [];
   const hiddenSteps: ResolvedStep[] = [];
 
   for (const stepDef of schema.steps) {
-    const stepVisible = isVisible(stepDef.visibleWhen, data, externalVars);
+    const stepVisible = isVisible(stepDef.visibleWhen, data, externalVars, externalEnums);
 
-    const resolvedFields: ResolvedField[] = stepDef.fields.map((fieldDef) => ({
-      definition: fieldDef,
-      visible: isVisible(fieldDef.visibleWhen, data, externalVars),
-      dependenciesMet: areDependenciesMet(fieldDef.dependsOn, data, externalVars),
-    }));
+    const resolvedFields: ResolvedField[] = stepDef.fields.map((fieldDef) => {
+      let resolvedOptions: SelectOption[] | undefined;
+      if (fieldDef.externalEnumId && externalEnums) {
+        const enumDef = externalEnums.find((e) => e.id === fieldDef.externalEnumId);
+        resolvedOptions = enumDef?.values;
+      }
+      return {
+        definition: fieldDef,
+        visible: isVisible(fieldDef.visibleWhen, data, externalVars, externalEnums),
+        dependenciesMet: areDependenciesMet(fieldDef.dependsOn, data, externalVars),
+        resolvedOptions,
+      };
+    });
 
     const resolvedStep: ResolvedStep = {
       definition: stepDef,

@@ -71,6 +71,34 @@ import { resolveTree } from "@waypointjs/core";
 
 const tree = resolveTree(schema, data, externalVars);
 // { steps: ResolvedStep[], hiddenSteps: ResolvedStep[], missingExternalVars: string[] }
+
+// With external enum resolution:
+const tree = resolveTree(schema, data, externalVars, externalEnums);
+```
+
+When `externalEnums` is provided, fields with `externalEnumId` will have their `resolvedOptions` populated.
+Use `field.resolvedOptions ?? field.definition.options` when rendering select/multiselect/radio fields.
+
+### ResolvedField
+
+```ts
+interface ResolvedField {
+  definition: FieldDefinition;
+  visible: boolean;
+  dependenciesMet: boolean;
+  /** Populated when field.externalEnumId matches a provided external enum */
+  resolvedOptions?: SelectOption[];
+}
+```
+
+### ExternalEnum
+
+```ts
+interface ExternalEnum {
+  id: string;
+  label: string;
+  values: SelectOption[];  // { label: string; value: string | number }[]
+}
 ```
 
 See [Tree Resolution](/concepts/history) for full documentation.
@@ -97,11 +125,39 @@ Generates a Zod validation schema from an array of resolved fields.
 ```ts
 import { buildZodSchema } from "@waypointjs/core";
 
-const zodSchema = buildZodSchema(fields); // z.ZodObject
+const zodSchema = buildZodSchema(fields);
+// or with external enum resolution (required for inEnum / notInEnum rules):
+const zodSchema = buildZodSchema(fields, externalEnums);
+
 const result = zodSchema.safeParse(formValues);
 ```
 
-Supported validation rules: `required`, `min`, `max`, `minLength`, `maxLength`, `email`, `url`, `regex`, `custom`.
+### Supported validation rule types
+
+| Rule type | Description | Needs `value` |
+|---|---|---|
+| `required` | Field must be non-empty | — |
+| `min` | Numeric minimum (inclusive) | number |
+| `max` | Numeric maximum (inclusive) | number |
+| `minLength` | String minimum length | number |
+| `maxLength` | String maximum length | number |
+| `email` | Email format | — |
+| `url` | URL format | — |
+| `regex` | Value must match regex | regex string |
+| `equals` | Value must equal | any |
+| `notEquals` | Value must not equal | any |
+| `greaterThan` | Value must be `>` | number |
+| `greaterThanOrEqual` | Value must be `>=` | number |
+| `lessThan` | Value must be `<` | number |
+| `lessThanOrEqual` | Value must be `<=` | number |
+| `contains` | String must contain | string |
+| `notContains` | String must not contain | string |
+| `matches` | String must match regex | regex string |
+| `inEnum` | Value must be one of an external enum's values | enum id |
+| `notInEnum` | Value must not be in an external enum | enum id |
+| `custom` | Custom registered validator | — |
+
+For `inEnum` / `notInEnum`, pass the same `externalEnums` array to `buildZodSchema` that you pass to `resolveTree`.
 
 ```ts
 // Register a custom validator before using it
@@ -119,15 +175,34 @@ registerCustomValidator("strongPassword", (value) => {
 ```ts
 import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypointjs/core";
 
-// Evaluate a ConditionGroup
-evaluateConditionGroup(group, data, externalVars) // boolean
+// Evaluate a ConditionGroup — pass externalEnums to support inEnum / notInEnum operators
+evaluateConditionGroup(group, data, externalVars, externalEnums?) // boolean
 
-// Shorthand — undefined returns true
-isVisible(group, data, externalVars)              // boolean
+// Shorthand — undefined group returns true (always visible)
+isVisible(group, data, externalVars, externalEnums?)              // boolean
 
 // Resolve a dot-path to its value
 resolveFieldValue("stepId.fieldId", data, externalVars) // unknown
+resolveFieldValue("$ext.varId", data, externalVars)     // unknown
 ```
+
+### ConditionOperator
+
+All supported operators:
+
+```ts
+type ConditionOperator =
+  | "equals" | "notEquals"
+  | "greaterThan" | "greaterThanOrEqual"
+  | "lessThan"    | "lessThanOrEqual"
+  | "contains"    | "notContains"
+  | "in"          | "notIn"          // value is a comma-separated list (builder) or array (programmatic)
+  | "exists"      | "notExists"
+  | "matches"                         // regex string in value
+  | "inEnum"      | "notInEnum";      // value is an ExternalEnum id
+```
+
+For `inEnum` / `notInEnum`, `rule.value` is the `ExternalEnum.id`. The enum's values are resolved at evaluation time from the `externalEnums` argument.
 
 ---
 

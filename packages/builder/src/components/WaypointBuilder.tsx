@@ -1,11 +1,12 @@
 "use client";
 
-import type { WaypointSchema } from "@waypointjs/core";
+import type { WaypointSchema, CustomTypeDefinition, ExternalEnum } from "@waypointjs/core";
 import { createRuntimeStore } from "@waypointjs/core";
 import type { RuntimeStore } from "@waypointjs/core";
 import { useEffect, useRef, useState } from "react";
 import { buildThemeVars, type WaypointTheme } from "../theme";
 import { useBuilderStore } from "../store/builder-store";
+import { BuilderReadOnlyContext, BuilderCustomTypesContext, BuilderExternalEnumsContext } from "../context";
 import { ExternalVariablePanel } from "./ExternalVariablePanel";
 import { FieldEditor } from "./FieldEditor";
 import { FieldList } from "./FieldList";
@@ -29,6 +30,12 @@ export interface WaypointBuilderProps {
   className?: string;
   /** Inline style applied to the root element */
   style?: React.CSSProperties;
+  /** Disable all editing — view-only mode */
+  readOnly?: boolean;
+  /** Custom field types provided by the host app — appear in the field type dropdown */
+  appCustomTypes?: CustomTypeDefinition[];
+  /** External enum lists — select/multiselect/radio fields can reference them by id */
+  externalEnums?: ExternalEnum[];
 }
 
 export function WaypointBuilder({
@@ -38,6 +45,9 @@ export function WaypointBuilder({
   theme,
   className,
   style,
+  readOnly = false,
+  appCustomTypes = [],
+  externalEnums = [],
 }: WaypointBuilderProps) {
   const { loadSchema, schema, selectedStepId, selectedFieldId } = useBuilderStore();
   const [previewMode, setPreviewMode] = useState(false);
@@ -83,17 +93,22 @@ export function WaypointBuilder({
   const themeVars = buildThemeVars(theme);
 
   return (
+    <BuilderReadOnlyContext.Provider value={readOnly}>
+    <BuilderCustomTypesContext.Provider value={appCustomTypes}>
+    <BuilderExternalEnumsContext.Provider value={externalEnums}>
     <div className={className} style={{ ...rootStyle, ...themeVars, ...style }}>
       <Toolbar
         isMobile={isMobile}
-        onSave={!previewMode && onSave ? () => onSave(schema) : undefined}
+        readOnly={readOnly}
+        onSave={!previewMode && !readOnly && onSave ? () => onSave(schema) : undefined}
         previewMode={previewMode}
-        onTest={previewMode ? () => setPreviewMode(false) : handleTest}
+        onTest={!readOnly ? (previewMode ? () => setPreviewMode(false) : handleTest) : undefined}
       />
       {previewMode ? (
         <PreviewPanel
           store={previewStoreRef.current}
           schema={schema}
+          externalEnums={externalEnums}
           onEdit={() => setPreviewMode(false)}
         />
       ) : isMobile ? (
@@ -176,6 +191,9 @@ export function WaypointBuilder({
         </div>
       )}
     </div>
+    </BuilderExternalEnumsContext.Provider>
+    </BuilderCustomTypesContext.Provider>
+    </BuilderReadOnlyContext.Provider>
   );
 }
 

@@ -8,7 +8,7 @@ import {
   getNextStep,
   getPreviousStep,
 } from "@waypointjs/core";
-import type { WaypointRuntimeStore } from "@waypointjs/core";
+import type { ExternalEnum, WaypointRuntimeStore } from "@waypointjs/core";
 import type { ResolvedStep, ResolvedTree } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
@@ -50,7 +50,7 @@ export interface WaypointState {
  * @example
  * const { currentStep, progress, setFieldValue } = useWaypoint(store);
  */
-export function useWaypoint(store: StoreApi<WaypointRuntimeStore>): WaypointState {
+export function useWaypoint(store: StoreApi<WaypointRuntimeStore>, externalEnums?: ExternalEnum[]): WaypointState {
   const { schema, data, externalVars, currentStepId, isSubmitting } = useStore(
     store,
     (s: WaypointRuntimeStore) => ({
@@ -65,9 +65,9 @@ export function useWaypoint(store: StoreApi<WaypointRuntimeStore>): WaypointStat
   const tree = useMemo(
     () =>
       schema
-        ? resolveTree(schema, data, externalVars)
+        ? resolveTree(schema, data, externalVars, externalEnums)
         : { steps: [], hiddenSteps: [], missingExternalVars: [] },
-    [schema, data, externalVars]
+    [schema, data, externalVars, externalEnums]
   );
 
   const currentStep = useMemo(

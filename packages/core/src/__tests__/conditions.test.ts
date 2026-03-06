@@ -269,6 +269,103 @@ describe("evaluateConditionGroup — nested groups", () => {
 });
 
 // ---------------------------------------------------------------------------
+// evaluateConditionGroup — inEnum / notInEnum
+// ---------------------------------------------------------------------------
+
+describe("evaluateConditionGroup — inEnum / notInEnum", () => {
+  const make = (field: string, operator: any, value?: unknown): ConditionGroup => ({
+    combinator: "and",
+    rules: [{ field, operator, value }],
+  });
+
+  const enums = [
+    {
+      id: "countries",
+      label: "Countries",
+      values: [
+        { value: "fr", label: "France" },
+        { value: "de", label: "Germany" },
+        { value: "us", label: "United States" },
+      ],
+    },
+    {
+      id: "plans",
+      label: "Plans",
+      values: [
+        { value: "free", label: "Free" },
+        { value: "pro", label: "Pro" },
+      ],
+    },
+  ];
+
+  it("inEnum — true when field value is in the enum", () => {
+    expect(
+      evaluateConditionGroup(make("personal.country", "inEnum", "countries"), data, externalVars, enums)
+    ).toBe(true);
+  });
+
+  it("inEnum — false when field value is not in the enum", () => {
+    const d: JourneyData = { personal: { country: "jp" } };
+    expect(
+      evaluateConditionGroup(make("personal.country", "inEnum", "countries"), d, {}, enums)
+    ).toBe(false);
+  });
+
+  it("notInEnum — true when field value is not in the enum", () => {
+    const d: JourneyData = { personal: { country: "jp" } };
+    expect(
+      evaluateConditionGroup(make("personal.country", "notInEnum", "countries"), d, {}, enums)
+    ).toBe(true);
+  });
+
+  it("notInEnum — false when field value is in the enum", () => {
+    expect(
+      evaluateConditionGroup(make("personal.country", "notInEnum", "countries"), data, externalVars, enums)
+    ).toBe(false);
+  });
+
+  it("inEnum — false when enum id is unknown", () => {
+    expect(
+      evaluateConditionGroup(make("personal.country", "inEnum", "unknown_enum"), data, externalVars, enums)
+    ).toBe(false);
+  });
+
+  it("inEnum — false when no externalEnums provided", () => {
+    expect(
+      evaluateConditionGroup(make("personal.country", "inEnum", "countries"), data, externalVars)
+    ).toBe(false);
+  });
+
+  it("inEnum — matches numeric enum values as strings", () => {
+    const d: JourneyData = { step: { score: 42 } };
+    const numEnums = [{ id: "scores", label: "Scores", values: [{ value: 42, label: "42" }] }];
+    expect(
+      evaluateConditionGroup(make("step.score", "inEnum", "scores"), d, {}, numEnums)
+    ).toBe(true);
+  });
+
+  it("inEnum — works with external variables", () => {
+    const d: JourneyData = {};
+    const ev = { plan: "pro" };
+    expect(
+      evaluateConditionGroup(make("$ext.plan", "inEnum", "plans"), d, ev, enums)
+    ).toBe(true);
+  });
+
+  it("inEnum — works with OR combinator", () => {
+    const d: JourneyData = { personal: { country: "jp" } };
+    const group: ConditionGroup = {
+      combinator: "or",
+      rules: [
+        { field: "personal.country", operator: "inEnum", value: "countries" },
+        { field: "personal.country", operator: "equals", value: "jp" },
+      ],
+    };
+    expect(evaluateConditionGroup(group, d, {}, enums)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // isVisible
 // ---------------------------------------------------------------------------
 
@@ -291,5 +388,15 @@ describe("isVisible", () => {
       rules: [{ field: "personal.age", operator: "lessThan", value: 18 }],
     };
     expect(isVisible(condition, data, externalVars)).toBe(false);
+  });
+
+  it("supports inEnum operator when externalEnums provided", () => {
+    const enums = [{ id: "eu", label: "EU", values: [{ value: "fr", label: "France" }, { value: "de", label: "Germany" }] }];
+    const condition: ConditionGroup = {
+      combinator: "and",
+      rules: [{ field: "personal.country", operator: "inEnum", value: "eu" }],
+    };
+    expect(isVisible(condition, data, externalVars, enums)).toBe(true);
+    expect(isVisible(condition, data, externalVars)).toBe(false); // no enums → false
   });
 });

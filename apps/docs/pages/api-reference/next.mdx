@@ -43,6 +43,8 @@ import { WaypointRunner } from "@waypointjs/next";
 | `onComplete` | `(data) => void \| Promise<void>` | | Called when the last step is submitted |
 | `onStepComplete` | `(stepId, stepData) => void \| Promise<void>` | | Called after each step is validated and submitted |
 | `onDataChange` | `(data) => void` | | Called on every field value change |
+| `customFieldTypes` | `CustomTypeDefinition[]` | | App-provided custom field types — accessible via `useWaypointRuntimeContext().customFieldTypes` |
+| `externalEnums` | `ExternalEnum[]` | | App-provided option lists — resolved into `ResolvedField.resolvedOptions` by the tree resolver |
 | `children` | `React.ReactNode` | ✓ | Step pages |
 
 ### Init / Resume logic
@@ -190,6 +192,8 @@ interface WaypointRuntimeContextValue {
   onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
   onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  customFieldTypes?: CustomTypeDefinition[];
+  externalEnums?: ExternalEnum[];
 }
 ```
 

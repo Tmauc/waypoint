@@ -41,6 +41,23 @@ interface WaypointBuilderProps {
 
   /** Inline style applied to the root element */
   style?: React.CSSProperties;
+
+  /** Disable all editing — view-only mode (hides all add/remove/edit/reorder controls) */
+  readOnly?: boolean;
+
+  /**
+   * App-provided custom field types — appear in the field type dropdown under an "Custom" optgroup.
+   * When a custom type is selected, its `defaultValidation` (if any) is auto-applied to the field.
+   * Reuses `CustomTypeDefinition` from `@waypointjs/core`.
+   */
+  appCustomTypes?: CustomTypeDefinition[];
+
+  /**
+   * App-provided external enum lists.
+   * select/multiselect/radio fields can reference them by id via `field.externalEnumId`.
+   * Options are resolved into `ResolvedField.resolvedOptions` at runtime.
+   */
+  externalEnums?: ExternalEnum[];
 }
 ```
 
@@ -91,17 +108,79 @@ The builder has two modes:
 - Column left: Resolved step list with status indicators (✓ done / → current / ○ upcoming / – hidden)
 - Column right: Live form renderer for the current step
 
+### Field editor — Visibility conditions
+
+Each field has a **Visibility** row in the right panel. Click "Add" or "Edit" to open the condition builder modal. The condition builder supports all `ConditionOperator` values including `inEnum`/`notInEnum`. When external enums are injected:
+- A `⊞` picker button appears next to value inputs for quick enum value injection
+- For `is in enum` / `not in enum` operators, the value input becomes an enum name dropdown
+
+### Field editor — Validation
+
+Each field has a **Validation** row in the right panel. Click "Add" or "Edit" to open the validation builder modal. The validation builder works exactly like the condition builder:
+- Each row: `[ rule type ] [ value + ⊞ picker ] [ error message ] [✕]`
+- Supports all `ValidationRuleType` values including `inEnum`/`notInEnum`
+- For `is in enum` / `not in enum` rules, the value input becomes an enum name dropdown
+
 ### Preview mode
 
 Click **"▶ Tester"** in the toolbar to enter preview mode. The builder:
 1. Creates an in-memory runtime store (no localStorage persistence)
 2. Calls `store.getState().init(schema)` with the current schema
 3. Renders a functional form renderer (supports: text, email, tel, password, number, date, textarea, select, checkbox)
-4. Validates `required` rules inline (red error messages)
+4. Validates all rules inline — `inEnum`/`notInEnum` resolve against the injected `externalEnums`
 5. Evaluates conditions in real time — step visibility changes as you fill fields
 6. Shows a "✓ Parcours terminé !" screen on the last step
+7. **External variable mocks** — if the schema declares `externalVariables`, a panel appears in the left column with inputs to fill mock values (typed: text, number, checkbox for boolean). Values sync immediately to the runtime store and conditions re-evaluate in real time.
 
 Click **"← Éditer"** in the toolbar to return to the 3-column editor.
+
+---
+
+## External Enums
+
+External enums are app-provided option lists. **The values are never written to the schema** — only `externalEnumId` is stored as a reference. Inject them via the `externalEnums` prop:
+
+```tsx
+const enums: ExternalEnum[] = [
+  { id: "countries", label: "Countries", values: [
+    { value: "fr", label: "France" },
+    { value: "de", label: "Germany" },
+  ]},
+];
+
+<WaypointBuilder externalEnums={enums} appCustomTypes={types} ... />
+```
+
+**In the builder, enums appear in 3 places:**
+
+1. **Field options source** (select/multiselect/radio) — "Options source" dropdown in the field editor. Selecting an enum sets `field.externalEnumId` and clears `field.options`. The field list shows a `⊞ label` badge.
+
+2. **Condition builder (visibility)** — `is in enum` / `not in enum` operators: the value input becomes an enum selector. Other operators: a `⊞` button injects any enum value into the text input.
+
+3. **Validation builder** — `is in enum` / `not in enum` rule types behave identically to the condition builder.
+
+**At runtime** — pass the same array to `WaypointRunner.externalEnums` and `buildZodSchema(fields, externalEnums)` for conditions and Zod validation to work.
+
+---
+
+## Custom Types
+
+Custom types extend the built-in field types. They appear under a **Custom** optgroup in the field type dropdown. When selected, `defaultValidation` is auto-applied.
+
+```tsx
+const types: CustomTypeDefinition[] = [
+  {
+    id: "rich-text",
+    label: "Rich Text",
+    icon: "📝",
+    defaultValidation: [{ type: "required", message: "Content is required" }],
+  },
+];
+
+<WaypointBuilder appCustomTypes={types} ... />
+```
+
+At runtime, the schema stores `field.type = "rich-text"`. Check `field.definition.type` in your step renderer to delegate to a custom component. Pass custom types to `WaypointRunner.customFieldTypes` to access them via `useWaypointRuntimeContext().customFieldTypes`.
 
 ---
 
@@ -232,6 +311,7 @@ resetSchema(): void;           // Resets to a blank schema
 addStep(step?: Partial<Omit<StepDefinition, "id">>): string;  // Returns new step ID
 updateStep(stepId: string, updates: Partial<Omit<StepDefinition, "id">>): void;
 removeStep(stepId: string): void;
+duplicateStep(stepId: string): void;  // Clone with new IDs, inserts after original, remaps intra-step dependsOn
 reorderSteps(fromIndex: number, toIndex: number): void;
 selectStep(stepId: string | null): void;
 
@@ -239,6 +319,7 @@ selectStep(stepId: string | null): void;
 addField(stepId: string, field?: Partial<Omit<FieldDefinition, "id">>): string;  // Returns new field ID
 updateField(stepId: string, fieldId: string, updates: Partial<Omit<FieldDefinition, "id">>): void;
 removeField(stepId: string, fieldId: string): void;
+duplicateField(stepId: string, fieldId: string): void;  // Clone with new ID + " (copy)" label, inserts after original
 reorderFields(stepId: string, fromIndex: number, toIndex: number): void;
 selectField(fieldId: string | null): void;
 

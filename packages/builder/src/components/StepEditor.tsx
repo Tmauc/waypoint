@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useBuilderStore } from "../store/builder-store";
+import { useBuilderReadOnly } from "../context";
 import { ConditionBuilder } from "./ConditionBuilder";
 import { Modal } from "./Modal";
 
 export function StepEditor() {
   const { schema, selectedStepId, updateStep, setStepCondition } = useBuilderStore();
+  const readOnly = useBuilderReadOnly();
   const [conditionModalOpen, setConditionModalOpen] = useState(false);
 
   const step = schema.steps.find((s) => s.id === selectedStepId);
@@ -37,7 +39,8 @@ export function StepEditor() {
             style={styles.input}
             value={step.title}
             placeholder="Step title"
-            onChange={(e) => updateStep(step.id, { title: e.target.value })}
+            readOnly={readOnly}
+            onChange={readOnly ? undefined : (e) => updateStep(step.id, { title: e.target.value })}
           />
         </div>
 
@@ -48,7 +51,8 @@ export function StepEditor() {
             style={styles.input}
             value={step.url}
             placeholder="/onboarding/step-name"
-            onChange={(e) => updateStep(step.id, { url: e.target.value })}
+            readOnly={readOnly}
+            onChange={readOnly ? undefined : (e) => updateStep(step.id, { url: e.target.value })}
           />
           <div style={styles.hint}>Supports {"{{PARAM}}"} placeholders</div>
         </div>
@@ -59,7 +63,8 @@ export function StepEditor() {
             type="checkbox"
             id={`resume-${step.id}`}
             checked={!!step.enableResumeFromHere}
-            onChange={(e) =>
+            disabled={readOnly}
+            onChange={readOnly ? undefined : (e) =>
               updateStep(step.id, { enableResumeFromHere: e.target.checked || undefined })
             }
           />
@@ -87,22 +92,24 @@ export function StepEditor() {
               <div style={styles.conditionNone}>Always visible</div>
             )}
           </div>
-          <div style={styles.conditionActions}>
-            <button
-              style={styles.editConditionBtn}
-              onClick={() => setConditionModalOpen(true)}
-            >
-              {hasCondition ? "Edit" : "Add condition"}
-            </button>
-            {hasCondition && (
+          {!readOnly && (
+            <div style={styles.conditionActions}>
               <button
-                style={styles.clearConditionBtn}
-                onClick={() => setStepCondition(step.id, undefined)}
+                style={styles.editConditionBtn}
+                onClick={() => setConditionModalOpen(true)}
               >
-                Clear
+                {hasCondition ? "Edit" : "Add condition"}
               </button>
-            )}
-          </div>
+              {hasCondition && (
+                <button
+                  style={styles.clearConditionBtn}
+                  onClick={() => setStepCondition(step.id, undefined)}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
