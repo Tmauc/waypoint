@@ -94,7 +94,7 @@ export function HeroSection() {
           }}
         >
           <span style={{ color: "rgba(255,255,255,0.3)" }}>$</span>
-          pnpm add @waypoint/core @waypoint/react
+          pnpm add @waypointjs/core @waypointjs/react
         </div>
       </div>
 

@@ -1,9 +1,0 @@
-{
-  "use-waypoint": "@waypoint/core",
-  "use-waypoint-initializer": "@waypoint/react",
-  "use-step-waypoint": "@waypoint/next",
-  "use-waypoint-store": "@waypoint/builder",
-  "url-template-engine": {
-    "display": "hidden"
-  }
-}

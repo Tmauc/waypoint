@@ -1,15 +1,15 @@
 ---
-title: "@waypoint/core"
+title: "@waypointjs/core"
 ---
 
 import { Callout } from "nextra/components";
 
-# @waypoint/core
+# @waypointjs/core
 
 Framework-agnostic engine. Zero React dependency. All other packages build on top of this one.
 
 ```bash
-pnpm add @waypoint/core
+pnpm add @waypointjs/core
 ```
 
 ---
@@ -19,7 +19,7 @@ pnpm add @waypoint/core
 Creates an isolated Zustand vanilla store for a single journey.
 
 ```ts
-import { createRuntimeStore } from "@waypoint/core";
+import { createRuntimeStore } from "@waypointjs/core";
 
 const store = createRuntimeStore();
 // or with localStorage persistence:
@@ -67,7 +67,7 @@ interface WaypointRuntimeState {
 Pure function — evaluates all conditions and returns the visible tree.
 
 ```ts
-import { resolveTree } from "@waypoint/core";
+import { resolveTree } from "@waypointjs/core";
 
 const tree = resolveTree(schema, data, externalVars);
 // { steps: ResolvedStep[], hiddenSteps: ResolvedStep[], missingExternalVars: string[] }
@@ -80,7 +80,7 @@ See [Tree Resolution](/concepts/history) for full documentation.
 ## Navigation helpers
 
 ```ts
-import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypoint/core";
+import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypointjs/core";
 
 getNextStep(steps, currentStepId)      // ResolvedStep | undefined
 getPreviousStep(steps, currentStepId)  // ResolvedStep | undefined
@@ -95,7 +95,7 @@ findLastValidStep(steps, data, externalVars) // ResolvedStep | undefined
 Generates a Zod validation schema from an array of resolved fields.
 
 ```ts
-import { buildZodSchema } from "@waypoint/core";
+import { buildZodSchema } from "@waypointjs/core";
 
 const zodSchema = buildZodSchema(fields); // z.ZodObject
 const result = zodSchema.safeParse(formValues);
@@ -105,7 +105,7 @@ Supported validation rules: `required`, `min`, `max`, `minLength`, `maxLength`, 
 
 ```ts
 // Register a custom validator before using it
-import { registerCustomValidator } from "@waypoint/core";
+import { registerCustomValidator } from "@waypointjs/core";
 
 registerCustomValidator("strongPassword", (value) => {
   return typeof value === "string" && value.length >= 8 && /\d/.test(value);
@@ -117,7 +117,7 @@ registerCustomValidator("strongPassword", (value) => {
 ## Condition functions
 
 ```ts
-import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypoint/core";
+import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypointjs/core";
 
 // Evaluate a ConditionGroup
 evaluateConditionGroup(group, data, externalVars) // boolean
@@ -134,7 +134,7 @@ resolveFieldValue("stepId.fieldId", data, externalVars) // unknown
 ## validateSchema()
 
 ```ts
-import { validateSchema, assertSchema } from "@waypoint/core";
+import { validateSchema, assertSchema } from "@waypointjs/core";
 
 const result = validateSchema(parsed);
 // { valid: boolean, errors?: string[] }
@@ -156,7 +156,7 @@ import {
   getPreviousStepFromState,
   calculateProgressFromState,
   getMissingBlockingVars,
-} from "@waypoint/core";
+} from "@waypointjs/core";
 
 const state = store.getState();
 getResolvedTree(state)             // ResolvedTree
@@ -172,7 +172,7 @@ getMissingBlockingVars(state)      // string[]
 ## hasPersistedState()
 
 ```ts
-import { hasPersistedState } from "@waypoint/core";
+import { hasPersistedState } from "@waypointjs/core";
 
 // Returns true if localStorage has valid state for this schema
 hasPersistedState(store, schemaId) // boolean

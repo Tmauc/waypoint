@@ -6,12 +6,12 @@ import { Callout } from "nextra/components";
 
 # Builder Guide
 
-`@waypoint/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
+`@waypointjs/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
 
 ## Installation
 
 ```bash
-pnpm add @waypoint/builder @waypoint/core
+pnpm add @waypointjs/builder @waypointjs/core
 ```
 
 ## Basic embed
@@ -19,7 +19,7 @@ pnpm add @waypoint/builder @waypoint/core
 ```tsx
 "use client";
 
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 
 export default function BuilderPage() {
   return (
@@ -115,10 +115,10 @@ To export programmatically, read the schema from `onChange` or `onSave`:
 
 ## Validating an imported schema
 
-Use `validateSchema` from `@waypoint/core` to verify a schema before passing it to `defaultValue`:
+Use `validateSchema` from `@waypointjs/core` to verify a schema before passing it to `defaultValue`:
 
 ```ts
-import { validateSchema } from "@waypoint/core";
+import { validateSchema } from "@waypointjs/core";
 
 const result = validateSchema(parsed);
 if (!result.valid) {
@@ -131,7 +131,7 @@ if (!result.valid) {
 ## Theming
 
 ```tsx
-import { WaypointBuilder, DARK_THEME } from "@waypoint/builder";
+import { WaypointBuilder, DARK_THEME } from "@waypointjs/builder";
 
 // Use the built-in dark theme
 <WaypointBuilder theme={DARK_THEME} />
@@ -161,7 +161,7 @@ All theme tokens are compiled to CSS custom properties on the root element, so y
 The schema produced by the builder is a standard `WaypointSchema` — use it directly with `WaypointRunner`:
 
 ```tsx
-import { WaypointRunner, useWaypointStep } from "@waypoint/next";
+import { WaypointRunner, useWaypointStep } from "@waypointjs/next";
 
 // schema loaded from your API (was originally built with WaypointBuilder)
 <WaypointRunner schema={schema} onComplete={handleComplete}>

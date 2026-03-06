@@ -1,19 +1,19 @@
 ---
-title: "@waypoint/react"
+title: "@waypointjs/react"
 ---
 
 import { Callout } from "nextra/components";
 
-# @waypoint/react
+# @waypointjs/react
 
 Headless React hooks that take a `StoreApi` instance and work with any router.
 
 ```bash
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
 <Callout type="info">
-  If you are using Next.js App Router, prefer `@waypoint/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
+  If you are using Next.js App Router, prefer `@waypointjs/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
 </Callout>
 
 ---
@@ -23,7 +23,7 @@ pnpm add @waypoint/react @waypoint/core
 Access full journey state and actions.
 
 ```ts
-import { useWaypoint } from "@waypoint/react";
+import { useWaypoint } from "@waypointjs/react";
 import type { StoreApi } from "zustand";
 
 const state = useWaypoint(store);
@@ -65,8 +65,8 @@ interface WaypointState {
 ### Example
 
 ```tsx
-import { createRuntimeStore } from "@waypoint/core";
-import { useWaypoint } from "@waypoint/react";
+import { createRuntimeStore } from "@waypointjs/core";
+import { useWaypoint } from "@waypointjs/react";
 import { useRef } from "react";
 
 function MyJourneyShell({ schema, children }) {
@@ -95,7 +95,7 @@ function MyJourneyShell({ schema, children }) {
 Access the fields and data for a specific step.
 
 ```ts
-import { useWaypointStep } from "@waypoint/react";
+import { useWaypointStep } from "@waypointjs/react";
 
 const step = useWaypointStep(store, stepId);
 ```
@@ -147,8 +147,8 @@ function PersonalStep({ store }) {
 When you need to integrate with a router other than Next.js, build on top of `useWaypoint` and `useWaypointStep`:
 
 ```tsx
-import { createRuntimeStore, resolveTree, getNextStep } from "@waypoint/core";
-import { useWaypoint } from "@waypoint/react";
+import { createRuntimeStore, resolveTree, getNextStep } from "@waypointjs/core";
+import { useWaypoint } from "@waypointjs/react";
 import { useNavigate } from "react-router-dom";
 
 function WaypointProvider({ schema, children }) {

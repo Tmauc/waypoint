@@ -11,7 +11,7 @@ The **resolved tree** is the computed list of steps and fields that are actually
 ## resolveTree()
 
 ```ts
-import { resolveTree } from "@waypoint/core";
+import { resolveTree } from "@waypointjs/core";
 
 const tree: ResolvedTree = resolveTree(schema, data, externalVars);
 ```
@@ -53,7 +53,7 @@ interface ResolvedField {
 After resolving the tree you can navigate it with these helpers:
 
 ```ts
-import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypoint/core";
+import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypointjs/core";
 
 // Next step after currentStepId (undefined if on last step)
 const next = getNextStep(tree.steps, currentStepId);
@@ -72,7 +72,7 @@ const lastValid = findLastValidStep(tree.steps, data, externalVars);
 
 Conditions are re-evaluated every time data changes. If a user's answer makes a previously hidden step visible — or hides a step they already visited — the tree updates immediately.
 
-`useWaypointStep()` in `@waypoint/next` handles this automatically:
+`useWaypointStep()` in `@waypointjs/next` handles this automatically:
 1. After the user submits a step, the tree is re-resolved with the new data
 2. If the set of visible step IDs changed, `truncateHistoryAt(stepId)` prunes stale forward history
 3. Navigation then proceeds to the first step of the new tree
@@ -82,7 +82,7 @@ Conditions are re-evaluated every time data changes. If a user's answer makes a 
 The runtime store (`createRuntimeStore`) calls `resolveTree` internally via the computed helpers:
 
 ```ts
-import { createRuntimeStore, getResolvedTree, getCurrentStep } from "@waypoint/core";
+import { createRuntimeStore, getResolvedTree, getCurrentStep } from "@waypointjs/core";
 
 const store = createRuntimeStore();
 store.getState().init(schema);

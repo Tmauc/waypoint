@@ -6,17 +6,17 @@ import { Callout } from "nextra/components";
 
 # React Integration (Headless)
 
-Use `@waypoint/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
+Use `@waypointjs/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
 
 ## Installation
 
 ```bash
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
 ## Architecture
 
-Unlike `@waypoint/next`, the headless package ships no provider component. You manage:
+Unlike `@waypointjs/next`, the headless package ships no provider component. You manage:
 - Creating and storing the store instance
 - Calling `init()` or `resume()` on mount
 - Navigating between steps with your router
@@ -28,8 +28,8 @@ Unlike `@waypoint/next`, the headless package ships no provider component. You m
 "use client";
 
 import { createContext, useContext, useRef, useEffect } from "react";
-import { createRuntimeStore } from "@waypoint/core";
-import type { RuntimeStore, WaypointSchema } from "@waypoint/core";
+import { createRuntimeStore } from "@waypointjs/core";
+import type { RuntimeStore, WaypointSchema } from "@waypointjs/core";
 
 const JourneyContext = createContext<RuntimeStore | null>(null);
 
@@ -67,7 +67,7 @@ export function useJourneyStore() {
 
 ```tsx
 // components/StepShell.tsx
-import { useWaypoint } from "@waypoint/react";
+import { useWaypoint } from "@waypointjs/react";
 import { useJourneyStore } from "@/contexts/journey-context";
 import { useNavigate } from "react-router-dom";
 
@@ -116,7 +116,7 @@ export function StepShell({ stepId, children }) {
 ## Accessing a specific step's fields
 
 ```tsx
-import { useWaypointStep } from "@waypoint/react";
+import { useWaypointStep } from "@waypointjs/react";
 import { useJourneyStore } from "@/contexts/journey-context";
 
 function PersonalFields() {
@@ -145,8 +145,8 @@ Combine `buildZodSchema` with react-hook-form manually:
 ```tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { buildZodSchema } from "@waypoint/core";
-import { useWaypointStep } from "@waypoint/react";
+import { buildZodSchema } from "@waypointjs/core";
+import { useWaypointStep } from "@waypointjs/react";
 
 function StepForm({ store, stepId }) {
   const { fields, stepData, setStepData } = useWaypointStep(store, stepId);
@@ -173,7 +173,7 @@ function StepForm({ store, stepId }) {
 ```
 
 <Callout type="info">
-  `@waypoint/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
+  `@waypointjs/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
 </Callout>
 
 ## Persistence (manual)

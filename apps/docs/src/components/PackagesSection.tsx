@@ -1,30 +1,30 @@
 const PACKAGES = [
   {
-    name: "@waypoint/core",
+    name: "@waypointjs/core",
     description:
       "Schema types, condition engine, tree resolver, Zustand runtime store and Zod schema generator. Zero React dependency.",
-    install: "pnpm add @waypoint/core",
+    install: "pnpm add @waypointjs/core",
     accent: "#8b5cf6",
   },
   {
-    name: "@waypoint/react",
+    name: "@waypointjs/react",
     description:
       "Headless hooks for any React app. useWaypoint and useWaypointStep take a store instance and are router-agnostic.",
-    install: "pnpm add @waypoint/react",
+    install: "pnpm add @waypointjs/react",
     accent: "#00d4ff",
   },
   {
-    name: "@waypoint/next",
+    name: "@waypointjs/next",
     description:
       "Next.js App Router integration. WaypointRunner provider, useWaypointStep with react-hook-form + Zod, auto-resume.",
-    install: "pnpm add @waypoint/next",
+    install: "pnpm add @waypointjs/next",
     accent: "#22c55e",
   },
   {
-    name: "@waypoint/builder",
+    name: "@waypointjs/builder",
     description:
       "Embeddable no-code UI for building WaypointSchemas. 3-column editor + live preview mode. Drop it anywhere in your app.",
-    install: "pnpm add @waypoint/builder",
+    install: "pnpm add @waypointjs/builder",
     accent: "#f59e0b",
   },
 ];

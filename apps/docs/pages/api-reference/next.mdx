@@ -1,15 +1,15 @@
 ---
-title: "@waypoint/next"
+title: "@waypointjs/next"
 ---
 
 import { Callout } from "nextra/components";
 
-# @waypoint/next
+# @waypointjs/next
 
 Next.js App Router integration. Provides `WaypointRunner` (context provider) and `useWaypointStep` (per-page hook with react-hook-form + Zod).
 
 ```bash
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 ```
 
 ---
@@ -19,7 +19,7 @@ pnpm add @waypoint/next @waypoint/core
 A React provider that initialises an isolated Zustand store, handles persistence, deep-link resume and exposes callbacks for data lifecycle events.
 
 ```tsx
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 
 <WaypointRunner
   schema={schema}
@@ -67,7 +67,7 @@ When `externalVars` prop changes after mount, the runner calls `store.setExterna
 Per-page hook that auto-detects the current step from the URL, provides a react-hook-form instance pre-configured with the step's Zod schema, and handles validation + navigation on submit.
 
 ```tsx
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 const {
   currentStep,
@@ -119,7 +119,7 @@ const {
 // app/onboarding/personal/page.tsx
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
@@ -175,7 +175,7 @@ export default function PersonalPage() {
 Access the raw `WaypointRunner` context from any descendant component.
 
 ```ts
-import { useWaypointRuntimeContext } from "@waypoint/next";
+import { useWaypointRuntimeContext } from "@waypointjs/next";
 
 const { schema, store, onComplete, onStepComplete, onDataChange } =
   useWaypointRuntimeContext();
@@ -193,4 +193,4 @@ interface WaypointRuntimeContextValue {
 }
 ```
 
-Useful when you need direct store access alongside `useWaypoint()` from `@waypoint/react`.
+Useful when you need direct store access alongside `useWaypoint()` from `@waypointjs/react`.

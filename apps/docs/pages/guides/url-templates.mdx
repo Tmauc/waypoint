@@ -11,7 +11,7 @@ A complete guide to integrating Waypoint in a Next.js App Router project.
 ## Prerequisites
 
 ```bash
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 ```
 
 ## File structure
@@ -38,7 +38,7 @@ Each step's `url` in your schema must exactly match its Next.js route path.
 
 ```ts
 // lib/onboarding.schema.ts
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export const onboardingSchema: WaypointSchema = {
   version: "1",
@@ -93,7 +93,7 @@ export const onboardingSchema: WaypointSchema = {
 "use client";
 
 import { useRouter } from "next/navigation";
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 import { onboardingSchema } from "@/lib/onboarding.schema";
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -135,7 +135,7 @@ All step pages look the same — `useWaypointStep()` resolves fields from the sc
 // app/onboarding/personal/page.tsx  (same pattern for every step)
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
@@ -215,7 +215,7 @@ If conditions reference `$ext.varId`, pass values via the `externalVars` prop on
 "use client";
 
 import { useSession } from "next-auth/react";
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 
 export default function Layout({ children }) {
   const { data: session } = useSession();

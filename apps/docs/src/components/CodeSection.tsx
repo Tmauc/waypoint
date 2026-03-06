@@ -49,7 +49,7 @@ export function CodeSection() {
                 {" { WaypointRunner } "}
                 <Kw>from</Kw>
                 {" "}
-                <Str>&apos;@waypoint/next&apos;</Str>
+                <Str>&apos;@waypointjs/next&apos;</Str>
                 {";"}
               </Line>
               <Line>

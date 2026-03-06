@@ -24,19 +24,19 @@ The schema is self-contained. Export it, commit it, pass it as a prop — Waypoi
 
 | Package | Description |
 |---|---|
-| `@waypoint/core` | Schema types · condition engine · tree resolver · Zustand runtime store · Zod generator |
-| `@waypoint/react` | Headless hooks (`useWaypoint`, `useWaypointStep`) — router-agnostic |
-| `@waypoint/next` | Next.js App Router integration (`WaypointRunner`, `useWaypointStep` with RHF + Zod) |
-| `@waypoint/builder` | Embeddable no-code UI for building and testing schemas |
+| `@waypointjs/core` | Schema types · condition engine · tree resolver · Zustand runtime store · Zod generator |
+| `@waypointjs/react` | Headless hooks (`useWaypoint`, `useWaypointStep`) — router-agnostic |
+| `@waypointjs/next` | Next.js App Router integration (`WaypointRunner`, `useWaypointStep` with RHF + Zod) |
+| `@waypointjs/builder` | Embeddable no-code UI for building and testing schemas |
 
 ## Quick install
 
 ```bash
 # Next.js App Router
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 
 # Plain React (any router)
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
 ## Minimal example
@@ -102,7 +102,7 @@ export default function PersonalPage() {
 
 
 
-`zustand` is a peer dependency of `@waypoint/core`. It is installed automatically by most package managers.
+`zustand` is a peer dependency of `@waypointjs/core`. It is installed automatically by most package managers.
 
 ---
 
@@ -270,7 +270,7 @@ app/onboarding/
 - [WaypointSchema reference](/concepts/journey-tree) — full schema type documentation
 - [Conditions](/concepts/progress) — configure step/field visibility
 - [Persistence & resume](/concepts/multi-journey) — localStorage + deep-link
-- [API Reference — @waypoint/next](/api/use-waypoint-initializer) — all props & return values
+- [API Reference — @waypointjs/next](/api/use-waypoint-initializer) — all props & return values
 
 ---
 
@@ -350,7 +350,7 @@ interface ValidationRule {
 }
 ```
 
-`buildZodSchema(fields)` from `@waypoint/core` converts these rules into a Zod object schema automatically. `useWaypointStep()` in `@waypoint/next` uses this schema to drive react-hook-form validation.
+`buildZodSchema(fields)` from `@waypointjs/core` converts these rules into a Zod object schema automatically. `useWaypointStep()` in `@waypointjs/next` uses this schema to drive react-hook-form validation.
 
 ## ExternalVariable
 
@@ -487,7 +487,7 @@ const lastValid = findLastValidStep(tree.steps, data, externalVars);
 
 Conditions are re-evaluated every time data changes. If a user's answer makes a previously hidden step visible — or hides a step they already visited — the tree updates immediately.
 
-`useWaypointStep()` in `@waypoint/next` handles this automatically:
+`useWaypointStep()` in `@waypointjs/next` handles this automatically:
 1. After the user submits a step, the tree is re-resolved with the new data
 2. If the set of visible step IDs changed, `truncateHistoryAt(stepId)` prunes stale forward history
 3. Navigation then proceeds to the first step of the new tree
@@ -782,12 +782,12 @@ Each runner persists under its own key (`waypoint-runtime-checkout` / `waypoint-
 
 ---
 
-# @waypoint/core
+# @waypointjs/core
 
 Framework-agnostic engine. Zero React dependency. All other packages build on top of this one.
 
 ```bash
-pnpm add @waypoint/core
+pnpm add @waypointjs/core
 ```
 
 ---
@@ -934,7 +934,7 @@ These are thin wrappers around `resolveTree()` that read directly from a store s
   getPreviousStepFromState,
   calculateProgressFromState,
   getMissingBlockingVars,
-} from "@waypoint/core";
+} from "@waypointjs/core";
 
 const state = store.getState();
 getResolvedTree(state)             // ResolvedTree
@@ -960,15 +960,15 @@ Used internally by `WaypointRunner` to decide whether to call `resume()` or `ini
 
 ---
 
-# @waypoint/react
+# @waypointjs/react
 
 Headless React hooks that take a `StoreApi` instance and work with any router.
 
 ```bash
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
-If you are using Next.js App Router, prefer `@waypoint/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
+If you are using Next.js App Router, prefer `@waypointjs/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
 
 ---
 
@@ -1133,12 +1133,12 @@ function WaypointProvider({ schema, children }) {
 
 ---
 
-# @waypoint/next
+# @waypointjs/next
 
 Next.js App Router integration. Provides `WaypointRunner` (context provider) and `useWaypointStep` (per-page hook with react-hook-form + Zod).
 
 ```bash
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 ```
 
 ---
@@ -1318,16 +1318,16 @@ interface WaypointRuntimeContextValue {
 }
 ```
 
-Useful when you need direct store access alongside `useWaypoint()` from `@waypoint/react`.
+Useful when you need direct store access alongside `useWaypoint()` from `@waypointjs/react`.
 
 ---
 
-# @waypoint/builder
+# @waypointjs/builder
 
 An embeddable no-code UI for building and testing `WaypointSchema` objects. Drop it into any React or Next.js app.
 
 ```bash
-pnpm add @waypoint/builder @waypoint/core
+pnpm add @waypointjs/builder @waypointjs/core
 ```
 
 ---
@@ -1488,7 +1488,7 @@ A complete guide to integrating Waypoint in a Next.js App Router project.
 ## Prerequisites
 
 ```bash
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 ```
 
 ## File structure
@@ -1726,17 +1726,17 @@ No additional code needed.
 
 # React Integration (Headless)
 
-Use `@waypoint/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
+Use `@waypointjs/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
 
 ## Installation
 
 ```bash
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
 ## Architecture
 
-Unlike `@waypoint/next`, the headless package ships no provider component. You manage:
+Unlike `@waypointjs/next`, the headless package ships no provider component. You manage:
 - Creating and storing the store instance
 - Calling `init()` or `resume()` on mount
 - Navigating between steps with your router
@@ -1892,7 +1892,7 @@ function StepForm({ store, stepId }) {
 }
 ```
 
-`@waypoint/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
+`@waypointjs/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
 
 ## Persistence (manual)
 
@@ -1916,12 +1916,12 @@ useEffect(() => {
 
 # Builder Guide
 
-`@waypoint/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
+`@waypointjs/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
 
 ## Installation
 
 ```bash
-pnpm add @waypoint/builder @waypoint/core
+pnpm add @waypointjs/builder @waypointjs/core
 ```
 
 ## Basic embed
@@ -2023,7 +2023,7 @@ To export programmatically, read the schema from `onChange` or `onSave`:
 
 ## Validating an imported schema
 
-Use `validateSchema` from `@waypoint/core` to verify a schema before passing it to `defaultValue`:
+Use `validateSchema` from `@waypointjs/core` to verify a schema before passing it to `defaultValue`:
 
 ```ts
 
@@ -2110,25 +2110,25 @@ The skill covers all four Waypoint packages with full API references.
 
 
 
-**@waypoint/core**
+**@waypointjs/core**
 
 `WaypointSchema` types · `createRuntimeStore()` · `resolveTree()` · `buildZodSchema()` · condition engine · `validateSchema()`
 
 
 
-**@waypoint/react**
+**@waypointjs/react**
 
 `useWaypoint()` · `useWaypointStep()` · headless store integration · router-agnostic patterns
 
 
 
-**@waypoint/next**
+**@waypointjs/next**
 
 `WaypointRunner` props · `useWaypointStep()` with RHF + Zod · `useWaypointRuntimeContext()` · init vs resume logic
 
 
 
-**@waypoint/builder**
+**@waypointjs/builder**
 
 `WaypointBuilder` props · `WaypointTheme` tokens · `DEFAULT_THEME` / `DARK_THEME` · `useBuilderStore()` actions
 

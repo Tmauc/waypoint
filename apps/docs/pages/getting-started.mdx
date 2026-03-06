@@ -11,18 +11,18 @@ import { Callout, Steps, Tabs } from "nextra/components";
 <Tabs items={["Next.js", "React"]}>
   <Tabs.Tab>
 ```bash
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 ```
   </Tabs.Tab>
   <Tabs.Tab>
 ```bash
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
   </Tabs.Tab>
 </Tabs>
 
 <Callout type="info">
-  `zustand` is a peer dependency of `@waypoint/core`. It is installed automatically by most package managers.
+  `zustand` is a peer dependency of `@waypointjs/core`. It is installed automatically by most package managers.
 </Callout>
 
 ---
@@ -33,7 +33,7 @@ A `WaypointSchema` describes every step, field, validation rule and visibility c
 
 ```ts
 // lib/onboarding.schema.ts
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export const onboardingSchema: WaypointSchema = {
   version: "1",
@@ -100,7 +100,7 @@ export const onboardingSchema: WaypointSchema = {
 // app/onboarding/layout.tsx
 "use client";
 
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 import { onboardingSchema } from "@/lib/onboarding.schema";
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
@@ -127,7 +127,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
 // app/onboarding/personal/page.tsx
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
@@ -195,4 +195,4 @@ app/onboarding/
 - [WaypointSchema reference](/concepts/journey-tree) — full schema type documentation
 - [Conditions](/concepts/progress) — configure step/field visibility
 - [Persistence & resume](/concepts/multi-journey) — localStorage + deep-link
-- [API Reference — @waypoint/next](/api/use-waypoint-initializer) — all props & return values
+- [API Reference — @waypointjs/next](/api/use-waypoint-initializer) — all props & return values

@@ -1,15 +1,15 @@
 ---
-title: "@waypoint/builder"
+title: "@waypointjs/builder"
 ---
 
 import { Callout } from "nextra/components";
 
-# @waypoint/builder
+# @waypointjs/builder
 
 An embeddable no-code UI for building and testing `WaypointSchema` objects. Drop it into any React or Next.js app.
 
 ```bash
-pnpm add @waypoint/builder @waypoint/core
+pnpm add @waypointjs/builder @waypointjs/core
 ```
 
 ---
@@ -19,7 +19,7 @@ pnpm add @waypoint/builder @waypoint/core
 A self-contained editor component that renders a 3-column layout (step list, field list, step/field editors) and exports a `WaypointSchema`.
 
 ```tsx
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 
 <WaypointBuilder
   defaultValue={existingSchema}
@@ -65,7 +65,7 @@ Click **← Éditer** to return to the builder. The preview uses an isolated in-
 ### Theme
 
 ```ts
-import { WaypointBuilder, DEFAULT_THEME, DARK_THEME } from "@waypoint/builder";
+import { WaypointBuilder, DEFAULT_THEME, DARK_THEME } from "@waypointjs/builder";
 
 // Pass a partial theme to override specific tokens
 <WaypointBuilder
@@ -82,7 +82,7 @@ Built-in themes: `DEFAULT_THEME`, `DARK_THEME`. All values are mapped to CSS cus
 Access the builder's internal Zustand store for programmatic control.
 
 ```ts
-import { useBuilderStore } from "@waypoint/builder";
+import { useBuilderStore } from "@waypointjs/builder";
 
 const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
 ```
@@ -106,7 +106,7 @@ const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
 // app/admin/builder/page.tsx
 "use client";
 
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 import { useRouter } from "next/navigation";
 
 export default function BuilderPage() {
@@ -134,9 +134,9 @@ export default function BuilderPage() {
 ```tsx
 "use client";
 
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 import { useEffect, useState } from "react";
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export default function EditSchemaPage({ params }: { params: { id: string } }) {
   const [schema, setSchema] = useState<WaypointSchema | undefined>();
