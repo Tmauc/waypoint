@@ -1,7 +1,7 @@
 "use client";
 
-import type { WaypointSchema } from "@waypoint/core";
-import type { ResolvedTree } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
+import type { ResolvedTree } from "@waypointjs/core";
 import { badge, progressBar, progressTrack, TEXT_DIM, TEXT_BRIGHT, ACCENT } from "../styles";
 
 interface StepTreeProps {

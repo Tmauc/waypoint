@@ -1,8 +1,14 @@
 {
-  "name": "@waypoint/core",
-  "version": "0.1.0",
+  "name": "@waypointjs/core",
+  "version": "0.1.1",
   "description": "Framework-agnostic journey navigation store and utilities",
-  "keywords": ["navigation", "journey", "wizard", "multi-step", "zustand"],
+  "keywords": [
+    "navigation",
+    "journey",
+    "wizard",
+    "multi-step",
+    "zustand"
+  ],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -15,7 +21,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -35,5 +43,9 @@
   },
   "peerDependencies": {
     "zustand": ">=4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmauc/waypoint"
   }
 }

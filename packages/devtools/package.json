@@ -1,28 +1,30 @@
 {
-  "name": "@waypoint/devtools",
-  "version": "0.1.0",
+  "name": "@waypointjs/devtools",
+  "version": "0.1.1",
   "description": "Dev-only debug panel for Waypoint Runtime",
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@waypoint/core": "workspace:*",
-    "@waypoint/next": "workspace:*",
+    "@waypointjs/core": "workspace:*",
+    "@waypointjs/next": "workspace:*",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
@@ -35,5 +37,9 @@
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmauc/waypoint"
   }
 }

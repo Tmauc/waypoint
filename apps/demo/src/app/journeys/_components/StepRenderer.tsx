@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useWaypointStep } from "@waypoint/next";
-import type { ResolvedField } from "@waypoint/core";
+import { useWaypointStep } from "@waypointjs/next";
+import type { ResolvedField } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // Field

@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand";
 
-import { resolveTree } from "@waypoint/core";
-import type { WaypointRuntimeStore } from "@waypoint/core";
-import type { ResolvedField, ResolvedStep } from "@waypoint/core";
+import { resolveTree } from "@waypointjs/core";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
+import type { ResolvedField, ResolvedStep } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -27,7 +27,7 @@ export interface WaypointHeadlessStep {
 /**
  * Headless (router-agnostic) hook that resolves a specific step's fields and data.
  *
- * Use `@waypoint/next`'s `useWaypointStep()` for full Next.js integration
+ * Use `@waypointjs/next`'s `useWaypointStep()` for full Next.js integration
  * (form, validation, navigation).
  *
  * @param store   - The runtime store instance from your context

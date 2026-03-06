@@ -1,5 +1,5 @@
 /**
- * @waypoint/builder — Theming
+ * @waypointjs/builder — Theming
  *
  * All design tokens used by the builder UI.
  * Pass a partial `WaypointTheme` to `<WaypointBuilder theme={...} />` to override any token.

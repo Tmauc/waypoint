@@ -1,10 +1,10 @@
 import { useState } from "react";
 import type { StoreApi } from "zustand";
-import { useWaypoint, useWaypointStep } from "@waypoint/react";
-import type { WaypointRuntimeStore } from "@waypoint/core";
-import { resolveTree, getNextStep, getPreviousStep } from "@waypoint/core";
-import type { WaypointSchema } from "@waypoint/core";
-import type { ResolvedField } from "@waypoint/core";
+import { useWaypoint, useWaypointStep } from "@waypointjs/react";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
+import { resolveTree, getNextStep, getPreviousStep } from "@waypointjs/core";
+import type { WaypointSchema } from "@waypointjs/core";
+import type { ResolvedField } from "@waypointjs/core";
 
 interface PreviewPanelProps {
   store: StoreApi<WaypointRuntimeStore>;

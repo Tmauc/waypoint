@@ -9,8 +9,8 @@ import {
   hasPersistedState,
   resolveTree,
   findLastValidStep,
-} from "@waypoint/core";
-import type { WaypointSchema, WaypointRuntimeStore } from "@waypoint/core";
+} from "@waypointjs/core";
+import type { WaypointSchema, WaypointRuntimeStore } from "@waypointjs/core";
 
 import { WaypointRuntimeContext } from "./context";
 

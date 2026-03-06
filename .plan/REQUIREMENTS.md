@@ -34,7 +34,7 @@
 - Exemple : `age` passe de 20 à 16 → step conditionnelle disparaît → progression réajustée
 - Les steps conditionnelles peuvent s'insérer entre des steps existantes dynamiquement
 
-## 3. Builder no-code (`@waypoint/builder`)
+## 3. Builder no-code (`@waypointjs/builder`)
 
 ### Composant React embeddable
 - Un `<WaypointBuilder />` intégrable dans n'importe quelle app Next.js
@@ -66,7 +66,7 @@
 - Le builder permet de définir les règles de validation (required, min, max, email, regex…)
 - Ces règles sont encodées dans le JSON et interprétées au runtime via Zod
 
-## 4. Runtime (`@waypoint/next`)
+## 4. Runtime (`@waypointjs/next`)
 
 ### WaypointRunner (à créer)
 - Composant principal qui initialise le parcours à partir d'un JSON
@@ -108,11 +108,11 @@
 
 | Package | Statut | Description |
 |---|---|---|
-| `@waypoint/core` | Existant — à étendre | Store, URL engine, types |
-| `@waypoint/react` | Supprimé (phase 1) | Remplacé par next |
-| `@waypoint/next` | Existant — à étendre | Runtime Next.js, Runner, controllers |
-| `@waypoint/builder` | À créer (Phase 1) | Builder no-code embeddable |
-| `@waypoint/devtools` | À créer (Phase 2) | Panel debug dev-only |
+| `@waypointjs/core` | Existant — à étendre | Store, URL engine, types |
+| `@waypointjs/react` | Supprimé (phase 1) | Remplacé par next |
+| `@waypointjs/next` | Existant — à étendre | Runtime Next.js, Runner, controllers |
+| `@waypointjs/builder` | À créer (Phase 1) | Builder no-code embeddable |
+| `@waypointjs/devtools` | À créer (Phase 2) | Panel debug dev-only |
 
 ## 7. Tests
 

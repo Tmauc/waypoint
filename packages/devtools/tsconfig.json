@@ -6,8 +6,8 @@
     "lib": ["ES2020", "DOM"],
     "types": ["node"],
     "paths": {
-      "@waypoint/core": ["../../packages/core/src/index.ts"],
-      "@waypoint/next": ["../../packages/next/src/index.ts"]
+      "@waypointjs/core": ["../../packages/core/src/index.ts"],
+      "@waypointjs/next": ["../../packages/next/src/index.ts"]
     }
   },
   "include": ["src"]

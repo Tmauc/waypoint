@@ -1,12 +1,12 @@
-# @waypoint/react — Reference
+# @waypointjs/react — Reference
 
 ```bash
-pnpm add @waypoint/react
+pnpm add @waypointjs/react
 ```
 
 Headless hooks. Router-agnostic — you manage navigation yourself. Build on this for custom routers (React Router, TanStack Router, etc.).
 
-Depends on `@waypoint/core`. No Next.js dependency.
+Depends on `@waypointjs/core`. No Next.js dependency.
 
 ---
 
@@ -15,9 +15,9 @@ Depends on `@waypoint/core`. No Next.js dependency.
 Top-level hook. Subscribes to the runtime store and returns derived state + actions.
 
 ```typescript
-import { useWaypoint } from "@waypoint/react";
+import { useWaypoint } from "@waypointjs/react";
 import type { StoreApi } from "zustand";
-import type { WaypointRuntimeStore } from "@waypoint/core";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
 
 const state = useWaypoint(store);
 ```
@@ -68,8 +68,8 @@ interface WaypointState {
 ### Example — shell component
 
 ```typescript
-import { createRuntimeStore } from "@waypoint/core";
-import { useWaypoint } from "@waypoint/react";
+import { createRuntimeStore } from "@waypointjs/core";
+import { useWaypoint } from "@waypointjs/react";
 
 // Create store once (e.g. in a context provider or module-level)
 const store = createRuntimeStore();
@@ -110,7 +110,7 @@ function JourneyShell() {
 Per-step hook. Returns visible fields and their data for a specific step.
 
 ```typescript
-import { useWaypointStep } from "@waypoint/react";
+import { useWaypointStep } from "@waypointjs/react";
 
 const stepState = useWaypointStep(store, stepId);
 ```
@@ -139,13 +139,13 @@ interface WaypointHeadlessStep {
 - `fields` contains only visible fields (after `visibleWhen` evaluation).
 - `stepData` is `store.data[stepId] ?? {}` — the raw stored values.
 - Call `setFieldValue` for single field updates; `setStepData` to bulk-replace step data.
-- You are responsible for validation and navigation — use `buildZodSchema(fields)` from `@waypoint/core` if needed.
+- You are responsible for validation and navigation — use `buildZodSchema(fields)` from `@waypointjs/core` if needed.
 
 ### Example — step component
 
 ```typescript
-import { useWaypointStep } from "@waypoint/react";
-import { buildZodSchema } from "@waypoint/core";
+import { useWaypointStep } from "@waypointjs/react";
+import { buildZodSchema } from "@waypointjs/core";
 
 function PersonalStep({ store }: { store: StoreApi<WaypointRuntimeStore> }) {
   const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
@@ -172,8 +172,8 @@ function PersonalStep({ store }: { store: StoreApi<WaypointRuntimeStore> }) {
 ## Full headless pattern
 
 ```typescript
-import { createRuntimeStore } from "@waypoint/core";
-import { useWaypoint, useWaypointStep } from "@waypoint/react";
+import { createRuntimeStore } from "@waypointjs/core";
+import { useWaypoint, useWaypointStep } from "@waypointjs/react";
 
 // 1. Create store once (e.g. in a React context)
 const store = createRuntimeStore();

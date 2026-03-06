@@ -68,7 +68,7 @@
 ## 3. Agent Skill — .claude/skills/waypoint/
 
 - [ ] `SKILL.md` — mettre à jour la section "Key Patterns" ou "Critical Rules" si la feature introduit un nouveau pattern ou une règle à ne pas oublier
-- [ ] `references/core.md` — si la feature est dans `@waypoint/core` (nouveaux types, fonctions, actions du store)
+- [ ] `references/core.md` — si la feature est dans `@waypointjs/core` (nouveaux types, fonctions, actions du store)
 - [ ] `references/react.md` — si la feature change `useWaypoint` ou `useWaypointStep` headless
 - [ ] `references/next.md` — si la feature change `WaypointRunner`, `useWaypointStep` Next.js, ou le contexte
 - [ ] `references/builder.md` — si la feature change `WaypointBuilder`, le thème, ou `useBuilderStore`

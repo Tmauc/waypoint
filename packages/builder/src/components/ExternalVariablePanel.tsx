@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExternalVariable } from "@waypoint/core";
+import type { ExternalVariable } from "@waypointjs/core";
 import { useState } from "react";
 import { useBuilderStore } from "../store/builder-store";
 
@@ -270,7 +270,7 @@ function TypeBadge({ type }: { type: VarType }) {
 // computeUsageMap — scan all steps/fields for $ext.varId references
 // ---------------------------------------------------------------------------
 
-import type { StepDefinition, ConditionGroup } from "@waypoint/core";
+import type { StepDefinition, ConditionGroup } from "@waypointjs/core";
 
 function computeUsageMap(steps: StepDefinition[]): Map<string, string[]> {
   const map = new Map<string, string[]>();

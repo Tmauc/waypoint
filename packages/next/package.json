@@ -1,8 +1,13 @@
 {
-  "name": "@waypoint/next",
-  "version": "0.1.0",
-  "description": "Next.js integration for @waypoint/react",
-  "keywords": ["navigation", "journey", "wizard", "next.js"],
+  "name": "@waypointjs/next",
+  "version": "0.1.1",
+  "description": "Next.js integration for @waypointjs/react",
+  "keywords": [
+    "navigation",
+    "journey",
+    "wizard",
+    "next.js"
+  ],
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -15,7 +20,9 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -23,8 +30,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
-    "@waypoint/core": "workspace:*",
-    "@waypoint/react": "workspace:*",
+    "@waypointjs/core": "workspace:*",
+    "@waypointjs/react": "workspace:*",
     "react-hook-form": "^7.53.2",
     "zustand": "^4.5.2"
   },
@@ -38,5 +45,9 @@
   "peerDependencies": {
     "next": ">=14",
     "react": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmauc/waypoint"
   }
 }

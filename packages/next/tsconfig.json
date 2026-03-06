@@ -5,8 +5,8 @@
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM"],
     "paths": {
-      "@waypoint/core": ["../../packages/core/src/index.ts"],
-      "@waypoint/react": ["../../packages/react/src/index.ts"]
+      "@waypointjs/core": ["../../packages/core/src/index.ts"],
+      "@waypointjs/react": ["../../packages/react/src/index.ts"]
     }
   },
   "include": ["src"]

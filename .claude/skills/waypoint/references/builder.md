@@ -1,12 +1,12 @@
-# @waypoint/builder — Reference
+# @waypointjs/builder — Reference
 
 ```bash
-pnpm add @waypoint/builder
+pnpm add @waypointjs/builder
 ```
 
-Embeddable no-code schema editor. Drop it in any admin page to build `WaypointSchema` objects visually. Includes a live preview mode ("▶ Tester") powered by `@waypoint/react`.
+Embeddable no-code schema editor. Drop it in any admin page to build `WaypointSchema` objects visually. Includes a live preview mode ("▶ Tester") powered by `@waypointjs/react`.
 
-Depends on `@waypoint/core` and `@waypoint/react`. Works in any React environment (not Next.js specific).
+Depends on `@waypointjs/core` and `@waypointjs/react`. Works in any React environment (not Next.js specific).
 
 ---
 
@@ -17,7 +17,7 @@ The main component. Fills its parent container.
 ```tsx
 "use client";
 
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 ```
 
 ### Props
@@ -56,7 +56,7 @@ interface WaypointBuilderProps {
 
 ```tsx
 "use client";
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 
 export default function AdminPage() {
   return (
@@ -112,8 +112,8 @@ Click **"← Éditer"** in the toolbar to return to the 3-column editor.
 All builder UI tokens are customizable. Pass a partial object — unspecified tokens use the built-in default (light) theme.
 
 ```typescript
-import { WaypointBuilder } from "@waypoint/builder";
-import type { WaypointTheme } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
+import type { WaypointTheme } from "@waypointjs/builder";
 
 const myTheme: WaypointTheme = {
   primary: "#0ea5e9",        // accent color for buttons and selected states
@@ -191,7 +191,7 @@ interface WaypointTheme {
 ### Built-in themes
 
 ```typescript
-import { DEFAULT_THEME, DARK_THEME } from "@waypoint/builder";
+import { DEFAULT_THEME, DARK_THEME } from "@waypointjs/builder";
 
 // Use dark theme:
 <WaypointBuilder theme={DARK_THEME} ... />
@@ -207,7 +207,7 @@ import { DEFAULT_THEME, DARK_THEME } from "@waypoint/builder";
 Internal Zustand store exposed for advanced use cases. Use this if you need to programmatically drive the builder from outside (e.g. load a schema, add a step).
 
 ```typescript
-import { useBuilderStore } from "@waypoint/builder";
+import { useBuilderStore } from "@waypointjs/builder";
 ```
 
 ### State
@@ -263,7 +263,7 @@ setPersistenceMode(mode: PersistenceMode): void;
 ### Example — programmatic schema loading
 
 ```typescript
-import { useBuilderStore } from "@waypoint/builder";
+import { useBuilderStore } from "@waypointjs/builder";
 
 function LoadButton({ schema }: { schema: WaypointSchema }) {
   const { loadSchema } = useBuilderStore();
@@ -283,7 +283,7 @@ function LoadButton({ schema }: { schema: WaypointSchema }) {
 Utility used internally. Converts a `WaypointTheme` into a React `CSSProperties` object of `--wp-*` CSS variables.
 
 ```typescript
-import { buildThemeVars } from "@waypoint/builder";
+import { buildThemeVars } from "@waypointjs/builder";
 
 const cssVars = buildThemeVars({ primary: "#0ea5e9" });
 // Returns: { "--wp-primary": "#0ea5e9", "--wp-canvas": "#ffffff", ... }

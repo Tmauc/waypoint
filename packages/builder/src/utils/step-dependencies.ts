@@ -1,4 +1,4 @@
-import type { ConditionGroup, WaypointSchema } from "@waypoint/core";
+import type { ConditionGroup, WaypointSchema } from "@waypointjs/core";
 
 /**
  * For a given step, returns the set of step IDs it depends on.

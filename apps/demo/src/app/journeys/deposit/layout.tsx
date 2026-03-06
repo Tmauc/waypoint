@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { WaypointRunner } from "@waypoint/next";
-import { WaypointDevtools } from "@waypoint/devtools";
+import { WaypointRunner } from "@waypointjs/next";
+import { WaypointDevtools } from "@waypointjs/devtools";
 import { depositSchema } from "./schema";
 
 export default function DepositLayout({ children }: { children: React.ReactNode }) {

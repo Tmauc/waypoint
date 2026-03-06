@@ -19,7 +19,7 @@ importers:
         version: 3.25.76
     devDependencies:
       '@changesets/cli':
-        specifier: ^2.27.1
+        specifier: ^2.29.8
         version: 2.29.8(@types/node@20.19.33)
       prettier:
         specifier: ^3.2.5
@@ -33,19 +33,19 @@ importers:
 
   apps/demo:
     dependencies:
-      '@waypoint/builder':
+      '@waypointjs/builder':
         specifier: workspace:*
         version: link:../../packages/builder
-      '@waypoint/core':
+      '@waypointjs/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@waypoint/devtools':
+      '@waypointjs/devtools':
         specifier: workspace:*
         version: link:../../packages/devtools
-      '@waypoint/next':
+      '@waypointjs/next':
         specifier: workspace:*
         version: link:../../packages/next
-      '@waypoint/react':
+      '@waypointjs/react':
         specifier: workspace:*
         version: link:../../packages/react
       next:
@@ -137,10 +137,10 @@ importers:
 
   packages/builder:
     dependencies:
-      '@waypoint/core':
+      '@waypointjs/core':
         specifier: workspace:*
         version: link:../core
-      '@waypoint/react':
+      '@waypointjs/react':
         specifier: workspace:*
         version: link:../react
       zustand:
@@ -196,10 +196,10 @@ importers:
 
   packages/devtools:
     dependencies:
-      '@waypoint/core':
+      '@waypointjs/core':
         specifier: workspace:*
         version: link:../core
-      '@waypoint/next':
+      '@waypointjs/next':
         specifier: workspace:*
         version: link:../next
       react-dom:
@@ -230,10 +230,10 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.71.2(react@18.3.1))
-      '@waypoint/core':
+      '@waypointjs/core':
         specifier: workspace:*
         version: link:../core
-      '@waypoint/react':
+      '@waypointjs/react':
         specifier: workspace:*
         version: link:../react
       react-hook-form:
@@ -261,7 +261,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@waypoint/core':
+      '@waypointjs/core':
         specifier: workspace:*
         version: link:../core
       zustand:

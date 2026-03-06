@@ -1,6 +1,6 @@
 "use client";
 
-import { type ConditionGroup, type ConditionOperator, type ConditionRule } from "@waypoint/core";
+import { type ConditionGroup, type ConditionOperator, type ConditionRule } from "@waypointjs/core";
 import { useAllFieldPaths } from "../hooks/useAllFieldPaths";
 
 const OPERATORS: { value: ConditionOperator; label: string; hasValue: boolean }[] = [

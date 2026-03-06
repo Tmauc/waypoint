@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { WaypointRunner } from "@waypoint/next";
-import { WaypointDevtools } from "@waypoint/devtools";
+import { WaypointRunner } from "@waypointjs/next";
+import { WaypointDevtools } from "@waypointjs/devtools";
 import { projectSchema } from "./schema";
 
 export default function ProjectLayout({ children }: { children: React.ReactNode }) {

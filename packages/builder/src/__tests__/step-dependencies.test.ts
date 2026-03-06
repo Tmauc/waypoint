@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 import {
   computeStepDependencies,
   getStepDependencyLabels,

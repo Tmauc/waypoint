@@ -1,4 +1,4 @@
-import { validateSchema } from "@waypoint/core";
+import { validateSchema } from "@waypointjs/core";
 import { useBuilderStore } from "../store/builder-store";
 
 interface ToolbarProps {

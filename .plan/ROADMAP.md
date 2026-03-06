@@ -7,7 +7,7 @@
 
 ---
 
-## PHASE 1 — Builder (`@waypoint/builder`) ✅ COMPLÈTE
+## PHASE 1 — Builder (`@waypointjs/builder`) ✅ COMPLÈTE
 > Objectif : Un `<WaypointBuilder />` embeddable qui génère un JSON versionné auto-suffisant.
 > Le JSON doit être parfait avant de passer à la Phase 2.
 
@@ -22,7 +22,7 @@
 - [x] `ExternalVariable` (id, label, type, blocking, usedIn)
 - [x] `CustomTypeDefinition` (id, label, icon, defaultValidation, metadata)
 - [x] `PersistenceMode` (zustand | backend-step | backend-manual)
-- [x] Exports depuis `@waypoint/core/src/index.ts`
+- [x] Exports depuis `@waypointjs/core/src/index.ts`
 - [x] 18 tests unitaires
 
 ---
@@ -42,7 +42,7 @@
 
 ---
 
-### 1.3 — Package `@waypoint/builder` ✅
+### 1.3 — Package `@waypointjs/builder` ✅
 - [x] `packages/builder/` — package.json, tsconfig.json, tsup.config.ts, vite.config.ts (jsdom)
 - [x] Dépendances : React peer, zustand, jsdom, vitest
 - [x] `builder-store.ts` — store Zustand complet :
@@ -119,7 +119,7 @@
 - [x] Bouton "Export JSON" — télécharge `{id}.waypoint.json`
 - [x] Bouton "Import JSON" — charge un fichier `.json`
 - [x] `onSave` callback
-- [x] Validation du JSON à l'import : `validateSchema` dans `@waypoint/core/src/validate-schema.ts`
+- [x] Validation du JSON à l'import : `validateSchema` dans `@waypointjs/core/src/validate-schema.ts`
   - Vérifie version, id, name, steps, fields, conditions, validation rules, externalVariables
   - Erreurs accumulées + message détaillé affiché à l'utilisateur
   - `assertSchema` pour usage runtime (lance une exception avec tous les messages)
@@ -153,7 +153,7 @@
 ---
 
 ### 1.11 — Mode Preview dans le Builder ✅
-- [x] `packages/builder/package.json` — ajout dépendance `@waypoint/react`
+- [x] `packages/builder/package.json` — ajout dépendance `@waypointjs/react`
 - [x] `packages/builder/src/components/PreviewPanel.tsx` — split view : liste des steps (✓/→/○/hidden) + renderer de step
 - [x] `packages/builder/src/components/Toolbar.tsx` — bouton "▶ Tester" (mode builder) / "← Éditer" (mode preview)
 - [x] `packages/builder/src/components/WaypointBuilder.tsx` — state `previewMode`, `previewStoreRef`, layout conditionnel
@@ -179,7 +179,7 @@
 
 ---
 
-### 2.1 — Nouveau Store (`@waypoint/core`) ✅
+### 2.1 — Nouveau Store (`@waypointjs/core`) ✅
 - [x] `packages/core/src/runtime-store.ts` — Zustand vanilla store factory
   - `data: Record<stepId, Record<fieldId, any>>`
   - `externalVars: Record<string, any>`
@@ -207,7 +207,7 @@
 
 ---
 
-### 2.3 — WaypointRunner (`@waypoint/next`) ✅
+### 2.3 — WaypointRunner (`@waypointjs/next`) ✅
 - [x] `packages/next/src/WaypointRunner.tsx` — Context Provider + init du store
   - Props : `schema`, `externalVars`, `defaultValues`, `fetchData`, `onComplete`, `onStepComplete`, `onDataChange`
   - **Multi-journey** : chaque instance crée son propre store isolé via `useRef` — plusieurs `<WaypointRunner>` peuvent coexister sans interférence
@@ -218,7 +218,7 @@
 
 ---
 
-### 2.4 — Controllers react-hook-form (`@waypoint/next`) ✅
+### 2.4 — Controllers react-hook-form (`@waypointjs/next`) ✅
 - [x] `packages/next/src/useWaypointStep.ts`
   - Retourne : `{ currentStep, fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep, isSubmitting, errors }`
   - `handleSubmit` : valide (Zod) + stocke + `onStepComplete` + `router.push` automatique
@@ -232,7 +232,7 @@
 
 ---
 
-### 2.5 — Navigation avancée (`@waypoint/next`) ✅
+### 2.5 — Navigation avancée (`@waypointjs/next`) ✅
 - [x] `goNext` / `goBack` sur l'arbre résolu (skip steps conditionnelles cachées)
 - [x] Blocage si variable externe bloquante manquante → erreur UI
 - [x] Progress calculé sur l'arbre résolu dynamique
@@ -256,7 +256,7 @@
 
 ---
 
-### 2.6 — `@waypoint/devtools` ✅
+### 2.6 — `@waypointjs/devtools` ✅
 - [x] Package `packages/devtools/` — `package.json`, `tsconfig.json`, `tsup.config.ts`
 - [x] `WaypointDevtools` — guard `NODE_ENV !== "development"` → no-op en prod (tree-shaken)
 - [x] `DevPanel` — drawer slide depuis la droite, bouton toggle fixe en bas-droite
@@ -286,8 +286,8 @@
 
 | Package | Tests | Statut |
 |---|---|---|
-| `@waypoint/core` | 196 | ✅ tous verts (Phase 1 + 34 runtime-store + 15 zod-generator) |
-| `@waypoint/builder` | 50 | ✅ tous verts |
+| `@waypointjs/core` | 196 | ✅ tous verts (Phase 1 + 34 runtime-store + 15 zod-generator) |
+| `@waypointjs/builder` | 50 | ✅ tous verts |
 | `apps/demo` (E2E) | 40 | ✅ tous verts |
 | **Total** | **286** | ✅ |
 

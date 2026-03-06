@@ -1,4 +1,4 @@
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // 1. User Onboarding — linear flow with field dependencies

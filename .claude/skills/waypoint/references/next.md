@@ -1,12 +1,12 @@
-# @waypoint/next — Reference
+# @waypointjs/next — Reference
 
 ```bash
-pnpm add @waypoint/next
+pnpm add @waypointjs/next
 ```
 
 Next.js App Router integration. Provides `WaypointRunner` (context provider) and `useWaypointStep` (RHF + Zod + automatic URL-based navigation).
 
-Depends on `@waypoint/core` and `@waypoint/react`. Requires Next.js 13+ App Router.
+Depends on `@waypointjs/core` and `@waypointjs/react`. Requires Next.js 13+ App Router.
 
 ---
 
@@ -17,7 +17,7 @@ Client component. Create one per journey in a layout file. Each instance creates
 ```tsx
 "use client";
 
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 ```
 
 ### Props
@@ -84,7 +84,7 @@ Each `<WaypointRunner>` creates its own isolated store. Multiple runners coexist
 // app/onboarding/layout.tsx
 "use client";
 
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 import { schema } from "@/lib/schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -114,7 +114,7 @@ Per-page hook. Detects the current step from the URL, wires React Hook Form to t
 Must be called inside a `<WaypointRunner>`.
 
 ```typescript
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
   useWaypointStep();
@@ -173,7 +173,7 @@ The hook matches `currentStep` by comparing `usePathname()` against each `step.d
 // app/onboarding/personal/page.tsx
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep, isSubmitting } =
@@ -216,7 +216,7 @@ export default function PersonalPage() {
 Low-level hook. Returns the raw context value from the nearest `WaypointRunner`.
 
 ```typescript
-import { useWaypointRuntimeContext } from "@waypoint/next";
+import { useWaypointRuntimeContext } from "@waypointjs/next";
 
 const { schema, store, onComplete, onStepComplete, onDataChange } =
   useWaypointRuntimeContext();

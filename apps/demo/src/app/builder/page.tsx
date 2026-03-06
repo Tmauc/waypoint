@@ -1,6 +1,6 @@
 "use client";
 
-import { WaypointBuilder, useBuilderStore, DARK_THEME } from "@waypoint/builder";
+import { WaypointBuilder, useBuilderStore, DARK_THEME } from "@waypointjs/builder";
 import { EXAMPLES } from "./examples";
 
 function ExamplesBar() {

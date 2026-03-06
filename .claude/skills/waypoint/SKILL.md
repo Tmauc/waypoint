@@ -1,6 +1,6 @@
 ---
 name: waypoint
-description: Best practices and patterns for Waypoint — a schema-driven multi-step journey framework for React & Next.js. Use this skill when working on projects that import @waypoint/core, @waypoint/react, @waypoint/next, or @waypoint/builder packages, or when building multi-step forms, onboarding flows, conditional steps, or schema-based journeys with Waypoint.
+description: Best practices and patterns for Waypoint — a schema-driven multi-step journey framework for React & Next.js. Use this skill when working on projects that import @waypointjs/core, @waypointjs/react, @waypointjs/next, or @waypointjs/builder packages, or when building multi-step forms, onboarding flows, conditional steps, or schema-based journeys with Waypoint.
 ---
 
 # Waypoint
@@ -12,10 +12,10 @@ Waypoint is a schema-driven multi-step journey framework for React & Next.js. De
 Four packages, layered dependency:
 
 ```
-@waypoint/core      → Schema types, condition engine, tree resolver, Zustand runtime store, Zod generator
-@waypoint/react     → Headless hooks: useWaypoint, useWaypointStep (router-agnostic)
-@waypoint/next      → Next.js App Router: WaypointRunner provider + useWaypointStep (RHF + Zod + navigation)
-@waypoint/builder   → Embeddable no-code schema editor with live preview mode
+@waypointjs/core      → Schema types, condition engine, tree resolver, Zustand runtime store, Zod generator
+@waypointjs/react     → Headless hooks: useWaypoint, useWaypointStep (router-agnostic)
+@waypointjs/next      → Next.js App Router: WaypointRunner provider + useWaypointStep (RHF + Zod + navigation)
+@waypointjs/builder   → Embeddable no-code schema editor with live preview mode
 ```
 
 ## Core Workflow
@@ -25,7 +25,7 @@ Four packages, layered dependency:
 The schema is a plain JSON object — fully portable, version-controlled, framework-agnostic:
 
 ```typescript
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export const schema: WaypointSchema = {
   version: "1",
@@ -92,7 +92,7 @@ export const schema: WaypointSchema = {
 // app/onboarding/layout.tsx
 "use client";
 
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 import { schema } from "@/lib/schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -120,7 +120,7 @@ One hook. Detects current step from URL, returns RHF-wired fields, handles valid
 // app/onboarding/personal/page.tsx
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
@@ -217,7 +217,7 @@ validation: [
 
 Register custom validators before rendering:
 ```typescript
-import { registerCustomValidator } from "@waypoint/core";
+import { registerCustomValidator } from "@waypointjs/core";
 registerCustomValidator("myValidator", (value) => typeof value === "string" && value.length > 0);
 ```
 
@@ -270,7 +270,7 @@ Drop `<WaypointBuilder>` in any admin page to build schemas visually:
 
 ```tsx
 "use client";
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 
 export default function AdminPage() {
   return (
@@ -293,11 +293,11 @@ Click **▶ Tester** in the toolbar to test conditions, validation and navigatio
 
 ### Headless usage (non-Next.js routers)
 
-With `@waypoint/react`, manage the store and navigation yourself:
+With `@waypointjs/react`, manage the store and navigation yourself:
 
 ```typescript
-import { createRuntimeStore } from "@waypoint/core";
-import { useWaypoint, useWaypointStep } from "@waypoint/react";
+import { createRuntimeStore } from "@waypointjs/core";
+import { useWaypoint, useWaypointStep } from "@waypointjs/react";
 
 // Create store once (e.g. in a context provider)
 const store = createRuntimeStore();
@@ -317,7 +317,7 @@ const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
 - **Schema is the source of truth** — steps, fields, conditions all live in the schema. Never hard-code field lists or step counts in components.
 - **`visibleWhen` is evaluated by `resolveTree()` on every data change** — the list of visible steps is dynamic. Always use `tree.steps.length` for progress calculation, not `schema.steps.length`.
 - **Field paths in conditions use dot notation** — `"stepId.fieldId"` for form data, `"$ext.varId"` for external variables.
-- **`useWaypointStep()` from `@waypoint/next` must be inside a `<WaypointRunner>`** — it reads from `WaypointRuntimeContext`.
+- **`useWaypointStep()` from `@waypointjs/next` must be inside a `<WaypointRunner>`** — it reads from `WaypointRuntimeContext`.
 - **`WaypointRunner` must be a Client Component** (`"use client"`) — place it in a layout file, not a page.
 - **Each `<WaypointRunner>` instance creates its own isolated store** — multiple runners on the same page have no shared state.
 - **`handleSubmit` auto-truncates stale forward history** — if visible steps changed after the user answered a field, stale future steps are pruned automatically.

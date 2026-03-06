@@ -1,4 +1,4 @@
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export const depositSchema: WaypointSchema = {
   version: "1",

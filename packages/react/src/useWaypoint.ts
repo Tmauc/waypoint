@@ -7,9 +7,9 @@ import {
   calculateProgress,
   getNextStep,
   getPreviousStep,
-} from "@waypoint/core";
-import type { WaypointRuntimeStore } from "@waypoint/core";
-import type { ResolvedStep, ResolvedTree } from "@waypoint/core";
+} from "@waypointjs/core";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
+import type { ResolvedStep, ResolvedTree } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -44,7 +44,7 @@ export interface WaypointState {
 /**
  * Headless hook for accessing and mutating the Waypoint runtime store.
  *
- * Router-agnostic — use `@waypoint/next`'s `useWaypointStep()` for full
+ * Router-agnostic — use `@waypointjs/next`'s `useWaypointStep()` for full
  * Next.js integration with form handling and automatic navigation.
  *
  * @example

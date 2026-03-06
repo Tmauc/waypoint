@@ -1,4 +1,4 @@
-// @waypoint/builder — public API
+// @waypointjs/builder — public API
 // Components and hooks will be exported from here as they are implemented.
 
 export { WaypointBuilder } from "./components/WaypointBuilder";

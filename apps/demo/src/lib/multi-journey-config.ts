@@ -1,4 +1,4 @@
-import type { JourneyTreeType } from "@waypoint/core";
+import type { JourneyTreeType } from "@waypointjs/core";
 
 export const JOURNEY_A_ID = "journey-a";
 export const JOURNEY_B_ID = "journey-b";

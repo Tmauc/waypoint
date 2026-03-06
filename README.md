@@ -4,10 +4,10 @@
 
 **Schema-driven multi-step journey framework for React & Next.js**
 
-[![npm version](https://img.shields.io/npm/v/@waypoint/core?color=00d4ff&label=%40waypoint%2Fcore&style=flat-square)](https://www.npmjs.com/package/@waypoint/core)
-[![npm version](https://img.shields.io/npm/v/@waypoint/react?color=8b5cf6&label=%40waypoint%2Freact&style=flat-square)](https://www.npmjs.com/package/@waypoint/react)
-[![npm version](https://img.shields.io/npm/v/@waypoint/next?color=22c55e&label=%40waypoint%2Fnext&style=flat-square)](https://www.npmjs.com/package/@waypoint/next)
-[![npm version](https://img.shields.io/npm/v/@waypoint/builder?color=f59e0b&label=%40waypoint%2Fbuilder&style=flat-square)](https://www.npmjs.com/package/@waypoint/builder)
+[![npm version](https://img.shields.io/npm/v/@waypointjs/core?color=00d4ff&label=%40waypoint%2Fcore&style=flat-square)](https://www.npmjs.com/package/@waypointjs/core)
+[![npm version](https://img.shields.io/npm/v/@waypointjs/react?color=8b5cf6&label=%40waypoint%2Freact&style=flat-square)](https://www.npmjs.com/package/@waypointjs/react)
+[![npm version](https://img.shields.io/npm/v/@waypointjs/next?color=22c55e&label=%40waypoint%2Fnext&style=flat-square)](https://www.npmjs.com/package/@waypointjs/next)
+[![npm version](https://img.shields.io/npm/v/@waypointjs/builder?color=f59e0b&label=%40waypoint%2Fbuilder&style=flat-square)](https://www.npmjs.com/package/@waypointjs/builder)
 [![License: MIT](https://img.shields.io/badge/license-MIT-white?style=flat-square)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
@@ -38,7 +38,7 @@ Define your entire journey once (`WaypointSchema`), drop in `<WaypointRunner>` a
 - **Resume & persistence** — localStorage via Zustand persist middleware; deep-links users to their last valid step on return
 - **No-code builder** — `<WaypointBuilder>` is an embeddable 3-column editor with a live preview/test mode
 - **Isolated multi-journey** — each `<WaypointRunner>` creates its own store; run concurrent journeys with no shared state
-- **Framework-agnostic core** — `@waypoint/react` headless hooks work with any router
+- **Framework-agnostic core** — `@waypointjs/react` headless hooks work with any router
 
 ---
 
@@ -46,10 +46,10 @@ Define your entire journey once (`WaypointSchema`), drop in `<WaypointRunner>` a
 
 | Package | Description |
 |---|---|
-| [`@waypoint/core`](./packages/core) | Schema types · condition engine · tree resolver · Zustand runtime store · Zod generator |
-| [`@waypoint/react`](./packages/react) | Headless hooks: `useWaypoint`, `useWaypointStep` — router-agnostic |
-| [`@waypoint/next`](./packages/next) | Next.js App Router: `WaypointRunner` provider + `useWaypointStep` with RHF + Zod |
-| [`@waypoint/builder`](./packages/builder) | Embeddable no-code schema editor with live preview mode |
+| [`@waypointjs/core`](./packages/core) | Schema types · condition engine · tree resolver · Zustand runtime store · Zod generator |
+| [`@waypointjs/react`](./packages/react) | Headless hooks: `useWaypoint`, `useWaypointStep` — router-agnostic |
+| [`@waypointjs/next`](./packages/next) | Next.js App Router: `WaypointRunner` provider + `useWaypointStep` with RHF + Zod |
+| [`@waypointjs/builder`](./packages/builder) | Embeddable no-code schema editor with live preview mode |
 
 ---
 
@@ -59,17 +59,17 @@ Define your entire journey once (`WaypointSchema`), drop in `<WaypointRunner>` a
 
 ```bash
 # Next.js App Router
-pnpm add @waypoint/next @waypoint/core
+pnpm add @waypointjs/next @waypointjs/core
 
 # React (any router)
-pnpm add @waypoint/react @waypoint/core
+pnpm add @waypointjs/react @waypointjs/core
 ```
 
 ### 1. Define a schema
 
 ```ts
 // lib/onboarding.schema.ts
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 
 export const schema: WaypointSchema = {
   version: "1",
@@ -121,7 +121,7 @@ export const schema: WaypointSchema = {
 // app/onboarding/layout.tsx
 "use client";
 
-import { WaypointRunner } from "@waypoint/next";
+import { WaypointRunner } from "@waypointjs/next";
 import { schema } from "@/lib/onboarding.schema";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -144,7 +144,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 // app/onboarding/personal/page.tsx  (same pattern for every step)
 "use client";
 
-import { useWaypointStep } from "@waypoint/next";
+import { useWaypointStep } from "@waypointjs/next";
 
 export default function PersonalPage() {
   const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
@@ -185,7 +185,7 @@ Drop `<WaypointBuilder>` into any admin page to let non-developers create and ed
 ```tsx
 "use client";
 
-import { WaypointBuilder } from "@waypoint/builder";
+import { WaypointBuilder } from "@waypointjs/builder";
 
 export default function AdminBuilderPage() {
   return (
@@ -231,10 +231,10 @@ WaypointRunner              ← creates isolated Zustand store per journey
 ```
 waypoint/
 ├── packages/
-│   ├── core/       @waypoint/core    — schema, conditions, tree resolver, store, Zod
-│   ├── react/      @waypoint/react   — headless hooks (useWaypoint, useWaypointStep)
-│   ├── next/       @waypoint/next    — WaypointRunner + Next.js useWaypointStep
-│   └── builder/    @waypoint/builder — no-code editor component
+│   ├── core/       @waypointjs/core    — schema, conditions, tree resolver, store, Zod
+│   ├── react/      @waypointjs/react   — headless hooks (useWaypoint, useWaypointStep)
+│   ├── next/       @waypointjs/next    — WaypointRunner + Next.js useWaypointStep
+│   └── builder/    @waypointjs/builder — no-code editor component
 └── apps/
     ├── demo/       interactive demo (Next.js)
     └── docs/       documentation site (Nextra)

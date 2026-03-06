@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useStore } from "zustand";
-import { useWaypointRuntimeContext } from "@waypoint/next";
+import { useWaypointRuntimeContext } from "@waypointjs/next";
 import {
   getResolvedTree,
   calculateProgressFromState,
   getMissingBlockingVars,
-} from "@waypoint/core";
-import type { WaypointRuntimeStore } from "@waypoint/core";
+} from "@waypointjs/core";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
 
 import { StepTree } from "./components/StepTree";
 import { DataInspector } from "./components/DataInspector";

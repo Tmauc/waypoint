@@ -1,6 +1,6 @@
 {
-  "name": "@waypoint/builder",
-  "version": "0.1.0",
+  "name": "@waypointjs/builder",
+  "version": "0.1.1",
   "description": "No-code journey builder for Waypoint",
   "keywords": [
     "waypoint",
@@ -11,14 +11,14 @@
   ],
   "license": "MIT",
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./src/index.ts",
-      "require": "./src/index.ts"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -32,8 +32,8 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@waypoint/core": "workspace:*",
-    "@waypoint/react": "workspace:*",
+    "@waypointjs/core": "workspace:*",
+    "@waypointjs/react": "workspace:*",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
@@ -48,5 +48,9 @@
   },
   "peerDependencies": {
     "react": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmauc/waypoint"
   }
 }

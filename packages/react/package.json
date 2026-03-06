@@ -1,6 +1,6 @@
 {
-  "name": "@waypoint/react",
-  "version": "0.1.0",
+  "name": "@waypointjs/react",
+  "version": "0.1.1",
   "description": "React hooks for waypoint journey navigation",
   "keywords": [
     "navigation",
@@ -30,7 +30,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@waypoint/core": "workspace:*",
+    "@waypointjs/core": "workspace:*",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
@@ -43,5 +43,9 @@
   "peerDependencies": {
     "react": ">=18",
     "zustand": ">=4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmauc/waypoint"
   }
 }

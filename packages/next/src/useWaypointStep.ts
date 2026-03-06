@@ -14,8 +14,8 @@ import {
   getNextStep,
   getPreviousStep,
   findStepIndex,
-} from "@waypoint/core";
-import type { ResolvedField, ResolvedStep, WaypointRuntimeStore } from "@waypoint/core";
+} from "@waypointjs/core";
+import type { ResolvedField, ResolvedStep, WaypointRuntimeStore } from "@waypointjs/core";
 
 import { useWaypointRuntimeContext } from "./context";
 

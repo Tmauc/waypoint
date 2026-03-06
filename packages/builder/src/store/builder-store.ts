@@ -7,7 +7,7 @@ import type {
   PersistenceMode,
   StepDefinition,
   WaypointSchema,
-} from "@waypoint/core";
+} from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // State

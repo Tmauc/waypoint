@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
 import type { StoreApi } from "zustand";
 
-import type { WaypointSchema } from "@waypoint/core";
-import type { WaypointRuntimeStore } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
+import type { WaypointRuntimeStore } from "@waypointjs/core";
 
 // ---------------------------------------------------------------------------
 // Context value

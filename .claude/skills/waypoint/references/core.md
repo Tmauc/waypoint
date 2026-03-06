@@ -1,7 +1,7 @@
-# @waypoint/core — Reference
+# @waypointjs/core — Reference
 
 ```bash
-pnpm add @waypoint/core
+pnpm add @waypointjs/core
 ```
 
 Zero React dependency. All other packages build on top of this one.
@@ -130,7 +130,7 @@ interface ExternalVariable {
 Creates a vanilla Zustand store for a single journey instance. No React dependency.
 
 ```typescript
-import { createRuntimeStore } from "@waypoint/core";
+import { createRuntimeStore } from "@waypointjs/core";
 
 // Without persistence
 const store = createRuntimeStore();
@@ -182,7 +182,7 @@ store.getState().reset();                    // clear all state
 ### hasPersistedState()
 
 ```typescript
-import { hasPersistedState } from "@waypoint/core";
+import { hasPersistedState } from "@waypointjs/core";
 
 // Returns true if localStorage has non-expired state for this schemaId
 hasPersistedState(store, schemaId); // boolean
@@ -199,7 +199,7 @@ Used by `WaypointRunner` to decide `resume()` vs `init()`.
 Pure function. Evaluates all `visibleWhen` conditions and returns the visible tree.
 
 ```typescript
-import { resolveTree } from "@waypoint/core";
+import { resolveTree } from "@waypointjs/core";
 
 const tree = resolveTree(schema, data, externalVars);
 // Returns ResolvedTree
@@ -230,7 +230,7 @@ interface ResolvedField {
 ### Navigation helpers
 
 ```typescript
-import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypoint/core";
+import { getNextStep, getPreviousStep, calculateProgress, findLastValidStep } from "@waypointjs/core";
 
 getNextStep(tree.steps, currentStepId)          // ResolvedStep | undefined
 getPreviousStep(tree.steps, currentStepId)       // ResolvedStep | undefined
@@ -248,7 +248,7 @@ import {
   getPreviousStepFromState,
   calculateProgressFromState,
   getMissingBlockingVars,
-} from "@waypoint/core";
+} from "@waypointjs/core";
 
 const state = store.getState();
 getResolvedTree(state)           // ResolvedTree
@@ -266,7 +266,7 @@ getMissingBlockingVars(state)    // string[]
 Converts `ResolvedField[]` into a Zod object schema. Used internally by `useWaypointStep()`.
 
 ```typescript
-import { buildZodSchema } from "@waypoint/core";
+import { buildZodSchema } from "@waypointjs/core";
 
 const zodSchema = buildZodSchema(fields);  // z.ZodTypeAny (ZodObject at runtime)
 const result = zodSchema.safeParse(formValues);
@@ -289,7 +289,7 @@ Validation rule → Zod mapping:
 ### registerCustomValidator()
 
 ```typescript
-import { registerCustomValidator } from "@waypoint/core";
+import { registerCustomValidator } from "@waypointjs/core";
 
 registerCustomValidator("sirenFormat", (value) => {
   return typeof value === "string" && /^\d{9}$/.test(value);
@@ -304,7 +304,7 @@ registerCustomValidator("sirenFormat", (value) => {
 ## Condition Functions (low-level)
 
 ```typescript
-import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypoint/core";
+import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypointjs/core";
 
 // Evaluate a ConditionGroup (returns false if group is undefined)
 evaluateConditionGroup(group, data, externalVars)  // boolean
@@ -322,7 +322,7 @@ resolveFieldValue("$ext.isPremium", data, externalVars)  // unknown
 ## Schema Validation
 
 ```typescript
-import { validateSchema, assertSchema } from "@waypoint/core";
+import { validateSchema, assertSchema } from "@waypointjs/core";
 
 // Returns result object
 const result = validateSchema(parsed);

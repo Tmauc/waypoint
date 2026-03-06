@@ -1,8 +1,8 @@
 "use client";
 
-import type { WaypointSchema } from "@waypoint/core";
-import { createRuntimeStore } from "@waypoint/core";
-import type { RuntimeStore } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
+import { createRuntimeStore } from "@waypointjs/core";
+import type { RuntimeStore } from "@waypointjs/core";
 import { useEffect, useRef, useState } from "react";
 import { buildThemeVars, type WaypointTheme } from "../theme";
 import { useBuilderStore } from "../store/builder-store";

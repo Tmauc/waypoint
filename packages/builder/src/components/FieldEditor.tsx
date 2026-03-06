@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ValidationRule, ValidationRuleType } from "@waypoint/core";
+import type { ValidationRule, ValidationRuleType } from "@waypointjs/core";
 import { useBuilderStore } from "../store/builder-store";
 import { ConditionBuilder } from "./ConditionBuilder";
 import { DependsOnInput } from "./DependsOnInput";

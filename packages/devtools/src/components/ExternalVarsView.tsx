@@ -1,6 +1,6 @@
 "use client";
 
-import type { WaypointSchema } from "@waypoint/core";
+import type { WaypointSchema } from "@waypointjs/core";
 import { JsonView } from "./JsonView";
 import { badge, TEXT_DIM, BORDER } from "../styles";
 
