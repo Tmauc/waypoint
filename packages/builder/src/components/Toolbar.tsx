@@ -5,9 +5,10 @@ interface ToolbarProps {
   onSave?: (schema: ReturnType<typeof useBuilderStore.getState>["schema"]) => void | Promise<void>;
   previewMode?: boolean;
   onTest?: () => void;
+  isMobile?: boolean;
 }
 
-export function Toolbar({ onSave, previewMode, onTest }: ToolbarProps) {
+export function Toolbar({ onSave, previewMode, onTest, isMobile }: ToolbarProps) {
   const { schema, isDirty, resetSchema } = useBuilderStore();
 
   const handleExport = () => {
@@ -72,10 +73,13 @@ export function Toolbar({ onSave, previewMode, onTest }: ToolbarProps) {
   return (
     <div style={styles.toolbar}>
       <div style={styles.left}>
-        <span style={styles.logo}>◈ waypoint</span>
-        <span style={styles.separator}>/</span>
+        {!isMobile && <span style={styles.logo}>◈ waypoint</span>}
+        {!isMobile && <span style={styles.separator}>/</span>}
         <input
-          style={styles.journeyName}
+          style={{
+            ...styles.journeyName,
+            ...(isMobile ? { maxWidth: 120, fontSize: 12 } : {}),
+          }}
           value={schema.name}
           placeholder="Journey name"
           onChange={(e) =>
@@ -90,27 +94,33 @@ export function Toolbar({ onSave, previewMode, onTest }: ToolbarProps) {
 
       <div style={styles.right}>
         {onTest && (
-          <button style={{ ...styles.btn, ...styles.testBtn }} onClick={onTest}>
-            ▶ Tester
+          <button style={{ ...styles.btn, ...styles.testBtn }} onClick={onTest} title="Tester">
+            {isMobile ? "▶" : "▶ Tester"}
           </button>
         )}
-        <button style={styles.btn} onClick={handleImport}>Import</button>
-        <button style={styles.btn} onClick={handleExport}>Export JSON</button>
+        <button style={styles.btn} onClick={handleImport} title="Import">
+          {isMobile ? "↓" : "Import"}
+        </button>
+        <button style={styles.btn} onClick={handleExport} title="Export JSON">
+          {isMobile ? "↑" : "Export JSON"}
+        </button>
         {onSave && (
           <button
             style={{ ...styles.btn, ...styles.saveBtn }}
             onClick={() => onSave(schema)}
+            title="Save"
           >
-            Save
+            {isMobile ? "✓" : "Save"}
           </button>
         )}
         <button
           style={{ ...styles.btn, color: "var(--wp-danger)" }}
+          title="Reset"
           onClick={() => {
             if (confirm("Reset the journey? All changes will be lost.")) resetSchema();
           }}
         >
-          Reset
+          {isMobile ? "⟳" : "Reset"}
         </button>
       </div>
     </div>

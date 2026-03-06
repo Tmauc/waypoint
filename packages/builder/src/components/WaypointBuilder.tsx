@@ -14,6 +14,8 @@ import { StepEditor } from "./StepEditor";
 import { StepList } from "./StepList";
 import { Toolbar } from "./Toolbar";
 
+type MobileTab = "steps" | "fields" | "config";
+
 export interface WaypointBuilderProps {
   /** Initial schema to load into the builder */
   defaultValue?: WaypointSchema;
@@ -37,8 +39,10 @@ export function WaypointBuilder({
   className,
   style,
 }: WaypointBuilderProps) {
-  const { loadSchema, schema } = useBuilderStore();
+  const { loadSchema, schema, selectedStepId, selectedFieldId } = useBuilderStore();
   const [previewMode, setPreviewMode] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeTab, setActiveTab] = useState<MobileTab>("steps");
 
   // Preview store — singleton, no localStorage persistence
   const previewStoreRef = useRef<RuntimeStore | null>(null);
@@ -47,12 +51,29 @@ export function WaypointBuilder({
   }
 
   useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
     if (defaultValue) loadSchema(defaultValue);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     onChange?.(schema);
   }, [schema, onChange]);
+
+  // Auto-navigate on mobile: selecting a step → Fields tab
+  useEffect(() => {
+    if (isMobile && selectedStepId) setActiveTab("fields");
+  }, [selectedStepId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-navigate on mobile: selecting a field → Config tab
+  useEffect(() => {
+    if (isMobile && selectedFieldId) setActiveTab("config");
+  }, [selectedFieldId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleTest() {
     previewStoreRef.current!.getState().init(schema);
@@ -64,6 +85,7 @@ export function WaypointBuilder({
   return (
     <div className={className} style={{ ...rootStyle, ...themeVars, ...style }}>
       <Toolbar
+        isMobile={isMobile}
         onSave={!previewMode && onSave ? () => onSave(schema) : undefined}
         previewMode={previewMode}
         onTest={previewMode ? () => setPreviewMode(false) : handleTest}
@@ -74,6 +96,51 @@ export function WaypointBuilder({
           schema={schema}
           onEdit={() => setPreviewMode(false)}
         />
+      ) : isMobile ? (
+        <>
+          {/* Steps panel */}
+          <div style={{ ...colStyle, display: activeTab === "steps" ? "flex" : "none" }}>
+            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <StepList />
+            </div>
+            <div style={{ borderTop: "1px solid var(--wp-border)", flexShrink: 0, overflow: "auto", maxHeight: 200 }}>
+              <ExternalVariablePanel />
+            </div>
+          </div>
+
+          {/* Fields panel */}
+          <div style={{ ...colStyle, display: activeTab === "fields" ? "flex" : "none" }}>
+            <FieldList />
+          </div>
+
+          {/* Config panel */}
+          <div style={{ ...colStyle, display: activeTab === "config" ? "flex" : "none" }}>
+            <div style={{ flex: 1, borderBottom: "1px solid var(--wp-border)", overflow: "hidden" }}>
+              <StepEditor />
+            </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <FieldEditor />
+            </div>
+          </div>
+
+          {/* Bottom tab bar */}
+          <div style={tabBarStyle}>
+            {(["steps", "fields", "config"] as MobileTab[]).map((tab) => (
+              <button
+                key={tab}
+                style={{ ...tabBtnStyle, ...(activeTab === tab ? tabBtnActiveStyle : {}) }}
+                onClick={() => setActiveTab(tab)}
+              >
+                <span style={{ fontSize: 14 }}>
+                  {tab === "steps" ? "⚡" : tab === "fields" ? "⊞" : "⚙"}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "capitalize" }}>
+                  {tab}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
       ) : (
         <div style={layoutStyle}>
           {/* Column 1 — Steps + External Variables */}
@@ -141,4 +208,30 @@ const dividerStyle: React.CSSProperties = {
   width: 1,
   background: "var(--wp-border)",
   flexShrink: 0,
+};
+
+const tabBarStyle: React.CSSProperties = {
+  display: "flex",
+  borderTop: "1px solid var(--wp-border)",
+  background: "var(--wp-toolbar-bg)",
+  flexShrink: 0,
+};
+
+const tabBtnStyle: React.CSSProperties = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 3,
+  padding: "8px 4px",
+  border: "none",
+  background: "transparent",
+  color: "var(--wp-text-subtle)",
+  cursor: "pointer",
+};
+
+const tabBtnActiveStyle: React.CSSProperties = {
+  color: "var(--wp-primary)",
+  borderTop: "2px solid var(--wp-primary)",
 };

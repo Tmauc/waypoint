@@ -101,23 +101,20 @@ export function BuilderSection() {
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <MockBtn amber>▶ Tester</MockBtn>
-              <MockBtn>Import</MockBtn>
-              <MockBtn>Export</MockBtn>
-              <MockBtn accent>Save</MockBtn>
+              <MockBtn amber icon="▶" title="Tester">▶ Tester</MockBtn>
+              <MockBtn icon="↓" title="Import">Import</MockBtn>
+              <MockBtn icon="↑" title="Export">Export</MockBtn>
+              <MockBtn accent icon="✓" title="Save">Save</MockBtn>
             </div>
           </div>
 
           {/* 3-column layout */}
-          <div className="flex" style={{ minHeight: 340, background: "#0f1117" }}>
+          <div className="flex flex-col sm:flex-row" style={{ background: "#0f1117" }}>
 
             {/* Column 1 — Steps */}
             <div
-              className="flex flex-col"
-              style={{
-                width: "22%",
-                borderRight: "1px solid rgba(255,255,255,0.06)",
-              }}
+              className="flex flex-col sm:w-[22%] border-b border-white/[0.06] sm:border-b-0 sm:border-r"
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
             >
               <ColHeader label="Steps" action="+ Add" />
               <div className="flex flex-col gap-1 p-2">
@@ -129,11 +126,8 @@ export function BuilderSection() {
 
             {/* Column 2 — Fields */}
             <div
-              className="flex flex-col"
-              style={{
-                width: "28%",
-                borderRight: "1px solid rgba(255,255,255,0.06)",
-              }}
+              className="flex flex-col sm:w-[28%] border-b border-white/[0.06] sm:border-b-0 sm:border-r"
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
             >
               <ColHeader label="Fields — Personal info" action="+ Field" />
               <div className="flex flex-col gap-1 p-2">
@@ -271,10 +265,14 @@ export function BuilderSection() {
 
 function MockBtn({
   children,
+  icon,
+  title,
   accent,
   amber,
 }: {
   children: React.ReactNode;
+  icon?: string;
+  title?: string;
   accent?: boolean;
   amber?: boolean;
 }) {
@@ -283,7 +281,8 @@ function MockBtn({
       type="button"
       aria-hidden="true"
       tabIndex={-1}
-      className="text-xs px-3 py-1.5 rounded font-medium"
+      title={title}
+      className="text-xs px-2 sm:px-3 py-1.5 rounded font-medium"
       style={
         accent
           ? {
@@ -304,7 +303,8 @@ function MockBtn({
             }
       }
     >
-      {children}
+      {icon && <span className="sm:hidden">{icon}</span>}
+      <span className={icon ? "hidden sm:inline" : undefined}>{children}</span>
     </button>
   );
 }

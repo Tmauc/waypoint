@@ -1,15 +1,24 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { WaypointBuilder, useBuilderStore, DARK_THEME } from "@waypointjs/builder";
 import { EXAMPLES } from "./examples";
 
 function ExamplesBar() {
   const loadSchema = useBuilderStore((s) => s.loadSchema);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   return (
-    <div style={styles.bar}>
+    <div style={{ ...styles.bar, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center" }}>
       <span style={styles.barLabel}>Examples</span>
-      <div style={styles.examples}>
+      <div style={{ ...styles.examples, flexDirection: isMobile ? "column" : "row" }}>
         {EXAMPLES.map((ex) => (
           <button
             key={ex.id}
