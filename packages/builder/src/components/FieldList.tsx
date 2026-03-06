@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useBuilderStore } from "../store/builder-store";
 import { useBuilderReadOnly, useBuilderCustomTypes, useBuilderExternalEnums } from "../context";
 import { isFieldMoveValid } from "../utils/step-dependencies";
+import { SortableList, SortableItem, DragHandle } from "./DndSortable";
 
 const FIELD_TYPES = [
   "text", "number", "email", "password", "tel", "url",
@@ -51,6 +52,26 @@ export function FieldList() {
     reorderFields(step.id, fromIndex, toIndex);
   };
 
+  const fieldIds = step.fields.map((f) => f.id);
+
+  const renderOverlay = (id: string) => {
+    const field = step.fields.find((f) => f.id === id);
+    if (!field) return null;
+    const ct = appCustomTypes.find((c) => c.id === field.type);
+    return (
+      <div style={{ ...styles.card, ...styles.cardDragOverlay }}>
+        <div style={styles.cardTop}>
+          <div style={styles.cardLeft}>
+            <span style={{ ...styles.typeBadge, ...(ct ? styles.typeBadgeCustom : {}) }}>
+              {ct ? `${ct.icon ? ct.icon + " " : ""}${ct.label}` : field.type}
+            </span>
+            <span style={styles.fieldLabel}>{field.label}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -75,147 +96,159 @@ export function FieldList() {
         {step.fields.length === 0 && (
           <div style={styles.emptyFields}>No fields yet. Click "Add field" to start.</div>
         )}
-        {step.fields.map((field, index) => {
-          const isSelected = field.id === selectedFieldId;
-          const isRequired = field.validation?.some((v) => v.type === "required") ?? false;
-          const hasCondition = !!field.visibleWhen;
-          const hasDeps = (field.dependsOn?.length ?? 0) > 0;
-          const enumDef = field.externalEnumId
-            ? externalEnums.find((e) => e.id === field.externalEnumId)
-            : undefined;
-          const isUsedAsDep = allDependencyTargets.has(`${step.id}.${field.id}`);
 
-          const canMoveUp = index > 0 &&
-            isFieldMoveValid(step.fields, step.id, index, index - 1).valid;
-          const canMoveDown = index < step.fields.length - 1 &&
-            isFieldMoveValid(step.fields, step.id, index, index + 1).valid;
+        <SortableList
+          items={fieldIds}
+          disabled={readOnly}
+          onReorder={tryMove}
+          renderOverlay={renderOverlay}
+          renderItem={(id, index) => {
+            const field = step.fields[index];
+            const isSelected = field.id === selectedFieldId;
+            const isRequired = field.validation?.some((v) => v.type === "required") ?? false;
+            const hasCondition = !!field.visibleWhen;
+            const hasDeps = (field.dependsOn?.length ?? 0) > 0;
+            const enumDef = field.externalEnumId
+              ? externalEnums.find((e) => e.id === field.externalEnumId)
+              : undefined;
+            const isUsedAsDep = allDependencyTargets.has(`${step.id}.${field.id}`);
 
-          const intraStepDeps = (field.dependsOn ?? [])
-            .filter((p) => p.startsWith(`${step.id}.`))
-            .map((p) => {
-              const fieldId = p.slice(step.id.length + 1);
-              return step.fields.find((f) => f.id === fieldId)?.label ?? fieldId;
-            });
+            const canMoveUp = index > 0 &&
+              isFieldMoveValid(step.fields, step.id, index, index - 1).valid;
+            const canMoveDown = index < step.fields.length - 1 &&
+              isFieldMoveValid(step.fields, step.id, index, index + 1).valid;
 
-          const intraStepDependents = step.fields.filter((f) =>
-            f.id !== field.id &&
-            (f.dependsOn ?? []).includes(`${step.id}.${field.id}`)
-          );
+            const intraStepDeps = (field.dependsOn ?? [])
+              .filter((p) => p.startsWith(`${step.id}.`))
+              .map((p) => {
+                const fieldId = p.slice(step.id.length + 1);
+                return step.fields.find((f) => f.id === fieldId)?.label ?? fieldId;
+              });
 
-          return (
-            <div
-              key={field.id}
-              style={{ ...styles.card, ...(isSelected ? styles.cardSelected : {}) }}
-              onClick={() => selectField(field.id)}
-            >
-              <div style={styles.cardTop}>
-                <div style={styles.cardLeft}>
-                  {(() => {
-                    const ct = appCustomTypes.find((c) => c.id === field.type);
-                    return (
-                      <span style={{ ...styles.typeBadge, ...(ct ? styles.typeBadgeCustom : {}) }}>
-                        {ct ? `${ct.icon ? ct.icon + " " : ""}${ct.label}` : field.type}
-                      </span>
-                    );
-                  })()}
-                  <span style={styles.fieldLabel}>{field.label}</span>
-                </div>
-                <div style={styles.cardRight}>
-                  {!readOnly && (
-                    <select
-                      style={styles.typeSelect}
-                      value={field.type}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) => {
-                        const newType = e.target.value;
-                        const customType = appCustomTypes.find((ct) => ct.id === newType);
-                        updateField(step.id, field.id, {
-                          type: newType,
-                          ...(customType?.defaultValidation
-                            ? { validation: customType.defaultValidation }
-                            : {}),
-                        });
-                      }}
-                    >
-                      {FIELD_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                      {appCustomTypes.length > 0 && (
-                        <optgroup label="Custom">
-                          {appCustomTypes.map((ct) => (
-                            <option key={ct.id} value={ct.id}>
-                              {ct.icon ? `${ct.icon} ` : ""}{ct.label}
-                            </option>
-                          ))}
-                        </optgroup>
+            const intraStepDependents = step.fields.filter((f) =>
+              f.id !== field.id &&
+              (f.dependsOn ?? []).includes(`${step.id}.${field.id}`)
+            );
+
+            return (
+              <SortableItem key={field.id} id={field.id} disabled={readOnly}>
+                {({ handleProps }) => (
+                  <div
+                    style={{ ...styles.card, ...(isSelected ? styles.cardSelected : {}) }}
+                    onClick={() => selectField(field.id)}
+                  >
+                    <div style={styles.cardTop}>
+                      <div style={styles.cardLeft}>
+                        {!readOnly && <DragHandle handleProps={handleProps} />}
+                        {(() => {
+                          const ct = appCustomTypes.find((c) => c.id === field.type);
+                          return (
+                            <span style={{ ...styles.typeBadge, ...(ct ? styles.typeBadgeCustom : {}) }}>
+                              {ct ? `${ct.icon ? ct.icon + " " : ""}${ct.label}` : field.type}
+                            </span>
+                          );
+                        })()}
+                        <span style={styles.fieldLabel}>{field.label}</span>
+                      </div>
+                      <div style={styles.cardRight}>
+                        {!readOnly && (
+                          <select
+                            style={styles.typeSelect}
+                            value={field.type}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              const newType = e.target.value;
+                              const customType = appCustomTypes.find((ct) => ct.id === newType);
+                              updateField(step.id, field.id, {
+                                type: newType,
+                                ...(customType?.defaultValidation
+                                  ? { validation: customType.defaultValidation }
+                                  : {}),
+                              });
+                            }}
+                          >
+                            {FIELD_TYPES.map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                            {appCustomTypes.length > 0 && (
+                              <optgroup label="Custom">
+                                {appCustomTypes.map((ct) => (
+                                  <option key={ct.id} value={ct.id}>
+                                    {ct.icon ? `${ct.icon} ` : ""}{ct.label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            )}
+                          </select>
+                        )}
+                        {!readOnly && index > 0 && (
+                          <button
+                            style={{ ...styles.iconBtn, ...(canMoveUp ? {} : styles.iconBtnBlocked) }}
+                            title={canMoveUp ? "Move up" : "Can't move — dependency order required"}
+                            onClick={(e) => { e.stopPropagation(); tryMove(index, index - 1); }}
+                          >↑</button>
+                        )}
+                        {!readOnly && index < step.fields.length - 1 && (
+                          <button
+                            style={{ ...styles.iconBtn, ...(canMoveDown ? {} : styles.iconBtnBlocked) }}
+                            title={canMoveDown ? "Move down" : "Can't move — dependency order required"}
+                            onClick={(e) => { e.stopPropagation(); tryMove(index, index + 1); }}
+                          >↓</button>
+                        )}
+                        {!readOnly && (
+                          <button
+                            style={styles.iconBtn}
+                            title="Duplicate field"
+                            onClick={(e) => { e.stopPropagation(); duplicateField(step.id, field.id); }}
+                          >⧉</button>
+                        )}
+                        {!readOnly && (
+                          <button
+                            style={{ ...styles.iconBtn, color: "var(--wp-danger)" }}
+                            title="Remove field"
+                            onClick={(e) => { e.stopPropagation(); removeField(step.id, field.id); }}
+                          >✕</button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Badges */}
+                    <div style={styles.badges}>
+                      {!isRequired && <span style={styles.badgeOptional}>optional</span>}
+                      {isRequired && <span style={styles.badgeRequired}>required</span>}
+                      {hasCondition && <span style={styles.badgeCondition}>conditional</span>}
+                      {hasDeps && <span style={styles.badgeDep}>depends on {field.dependsOn!.length}</span>}
+                      {isUsedAsDep && <span style={styles.badgeUsed}>← dependency</span>}
+                      {field.externalEnumId && (
+                        <span style={styles.badgeEnum}>
+                          ⊞ {enumDef ? enumDef.label : field.externalEnumId}
+                        </span>
                       )}
-                    </select>
-                  )}
-                  {!readOnly && index > 0 && (
-                    <button
-                      style={{ ...styles.iconBtn, ...(canMoveUp ? {} : styles.iconBtnBlocked) }}
-                      title={canMoveUp ? "Move up" : "Can't move — dependency order required"}
-                      onClick={(e) => { e.stopPropagation(); tryMove(index, index - 1); }}
-                    >↑</button>
-                  )}
-                  {!readOnly && index < step.fields.length - 1 && (
-                    <button
-                      style={{ ...styles.iconBtn, ...(canMoveDown ? {} : styles.iconBtnBlocked) }}
-                      title={canMoveDown ? "Move down" : "Can't move — dependency order required"}
-                      onClick={(e) => { e.stopPropagation(); tryMove(index, index + 1); }}
-                    >↓</button>
-                  )}
-                  {!readOnly && (
-                    <button
-                      style={styles.iconBtn}
-                      title="Duplicate field"
-                      onClick={(e) => { e.stopPropagation(); duplicateField(step.id, field.id); }}
-                    >⧉</button>
-                  )}
-                  {!readOnly && (
-                    <button
-                      style={{ ...styles.iconBtn, color: "var(--wp-danger)" }}
-                      title="Remove field"
-                      onClick={(e) => { e.stopPropagation(); removeField(step.id, field.id); }}
-                    >✕</button>
-                  )}
-                </div>
-              </div>
+                    </div>
 
-              {/* Badges */}
-              <div style={styles.badges}>
-                {!isRequired && <span style={styles.badgeOptional}>optional</span>}
-                {isRequired && <span style={styles.badgeRequired}>required</span>}
-                {hasCondition && <span style={styles.badgeCondition}>conditional</span>}
-                {hasDeps && <span style={styles.badgeDep}>depends on {field.dependsOn!.length}</span>}
-                {isUsedAsDep && <span style={styles.badgeUsed}>← dependency</span>}
-                {field.externalEnumId && (
-                  <span style={styles.badgeEnum}>
-                    ⊞ {enumDef ? enumDef.label : field.externalEnumId}
-                  </span>
+                    {/* Intra-step dependency info */}
+                    {intraStepDeps.length > 0 && (
+                      <div style={styles.depRow}>
+                        <span style={styles.depLabel}>needs:</span>
+                        {intraStepDeps.map((label) => (
+                          <span key={label} style={styles.depBadge}>{label}</span>
+                        ))}
+                      </div>
+                    )}
+                    {intraStepDependents.length > 0 && (
+                      <div style={styles.depRow}>
+                        <span style={styles.depLabelUsed}>used by:</span>
+                        {intraStepDependents.map((f) => (
+                          <span key={f.id} style={styles.depBadgeUsed}>{f.label}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
-
-              {/* Intra-step dependency info */}
-              {intraStepDeps.length > 0 && (
-                <div style={styles.depRow}>
-                  <span style={styles.depLabel}>needs:</span>
-                  {intraStepDeps.map((label) => (
-                    <span key={label} style={styles.depBadge}>{label}</span>
-                  ))}
-                </div>
-              )}
-              {intraStepDependents.length > 0 && (
-                <div style={styles.depRow}>
-                  <span style={styles.depLabelUsed}>used by:</span>
-                  {intraStepDependents.map((f) => (
-                    <span key={f.id} style={styles.depBadgeUsed}>{f.label}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </SortableItem>
+            );
+          }}
+        />
       </div>
     </div>
   );
@@ -250,6 +283,10 @@ const styles: Record<string, React.CSSProperties> = {
     background: "var(--wp-surface)", display: "flex", flexDirection: "column", gap: 6,
   },
   cardSelected: { background: "var(--wp-primary-muted)", border: "1px solid var(--wp-primary-border)" },
+  cardDragOverlay: {
+    boxShadow: "0 4px 16px rgba(0,0,0,0.25)", border: "1px solid var(--wp-primary-border)",
+    background: "var(--wp-surface)", opacity: 0.95,
+  },
   cardTop: { display: "flex", alignItems: "center", justifyContent: "space-between" },
   cardLeft: { display: "flex", alignItems: "center", gap: 8, minWidth: 0 },
   cardRight: { display: "flex", alignItems: "center", gap: 4, flexShrink: 0 },

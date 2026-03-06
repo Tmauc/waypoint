@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useBuilderStore } from "../store/builder-store";
 import { useBuilderReadOnly } from "../context";
 import {
@@ -8,6 +8,7 @@ import {
   getStepDependencyLabels,
   isMoveValid,
 } from "../utils/step-dependencies";
+import { SortableList, SortableItem, DragHandle } from "./DndSortable";
 
 export function StepList() {
   const { schema, selectedStepId, addStep, removeStep, duplicateStep, selectStep, reorderSteps } =
@@ -19,15 +20,36 @@ export function StepList() {
   const steps = schema.steps;
   const deps = computeStepDependencies(schema);
 
-  const tryMove = (fromIndex: number, toIndex: number) => {
-    const check = isMoveValid(steps, deps, fromIndex, toIndex);
-    if (!check.valid) {
-      setMoveError(check.reason ?? "Invalid move");
-      setTimeout(() => setMoveError(null), 3000);
-      return;
-    }
-    setMoveError(null);
-    reorderSteps(fromIndex, toIndex);
+  const tryMove = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      const check = isMoveValid(steps, deps, fromIndex, toIndex);
+      if (!check.valid) {
+        setMoveError(check.reason ?? "Invalid move");
+        setTimeout(() => setMoveError(null), 3000);
+        return;
+      }
+      setMoveError(null);
+      reorderSteps(fromIndex, toIndex);
+    },
+    [steps, deps, reorderSteps]
+  );
+
+  const stepIds = steps.map((s) => s.id);
+
+  const renderOverlay = (id: string) => {
+    const step = steps.find((s) => s.id === id);
+    if (!step) return null;
+    const index = steps.indexOf(step);
+    return (
+      <div style={{ ...styles.card, ...styles.cardDragOverlay }}>
+        <div style={styles.cardMain}>
+          <div style={styles.cardLeft}>
+            <div style={styles.cardIndex}>{index + 1}</div>
+            <div style={styles.cardTitle}>{step.title}</div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -54,128 +76,139 @@ export function StepList() {
           <div style={styles.empty}>No steps yet. Click "Add step" to start.</div>
         )}
 
-        {steps.map((step, index) => {
-          const isSelected = step.id === selectedStepId;
-          const hasCondition = !!step.visibleWhen;
-          const depLabels = getStepDependencyLabels(step.id, deps, schema);
+        <SortableList
+          items={stepIds}
+          disabled={readOnly}
+          onReorder={tryMove}
+          renderOverlay={renderOverlay}
+          renderItem={(id, index) => {
+            const step = steps[index];
+            const isSelected = step.id === selectedStepId;
+            const hasCondition = !!step.visibleWhen;
+            const depLabels = getStepDependencyLabels(step.id, deps, schema);
 
-          const canMoveUp =
-            index > 0 && isMoveValid(steps, deps, index, index - 1).valid;
-          const canMoveDown =
-            index < steps.length - 1 &&
-            isMoveValid(steps, deps, index, index + 1).valid;
+            const canMoveUp =
+              index > 0 && isMoveValid(steps, deps, index, index - 1).valid;
+            const canMoveDown =
+              index < steps.length - 1 &&
+              isMoveValid(steps, deps, index, index + 1).valid;
 
-          const dependents = steps.filter((s) =>
-            (deps.get(s.id) ?? new Set()).has(step.id)
-          );
+            const dependents = steps.filter((s) =>
+              (deps.get(s.id) ?? new Set()).has(step.id)
+            );
 
-          return (
-            <div
-              key={step.id}
-              style={{
-                ...styles.card,
-                ...(isSelected ? styles.cardSelected : {}),
-              }}
-              onClick={() => selectStep(step.id)}
-            >
-              <div style={styles.cardMain}>
-                <div style={styles.cardLeft}>
-                  <div style={styles.cardIndex}>{index + 1}</div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={styles.cardTitle}>{step.title}</div>
-                    <div style={styles.cardMeta}>
-                      {step.fields.length} field{step.fields.length !== 1 ? "s" : ""}
-                      {hasCondition && (
-                        <span style={styles.conditionBadge}>conditional</span>
+            return (
+              <SortableItem key={step.id} id={step.id} disabled={readOnly}>
+                {({ handleProps }) => (
+                  <div
+                    style={{
+                      ...styles.card,
+                      ...(isSelected ? styles.cardSelected : {}),
+                    }}
+                    onClick={() => selectStep(step.id)}
+                  >
+                    <div style={styles.cardMain}>
+                      <div style={styles.cardLeft}>
+                        {!readOnly && <DragHandle handleProps={handleProps} />}
+                        <div style={styles.cardIndex}>{index + 1}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={styles.cardTitle}>{step.title}</div>
+                          <div style={styles.cardMeta}>
+                            {step.fields.length} field{step.fields.length !== 1 ? "s" : ""}
+                            {hasCondition && (
+                              <span style={styles.conditionBadge}>conditional</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!readOnly && (
+                        <div style={styles.cardActions}>
+                          {index > 0 && (
+                            <button
+                              style={{
+                                ...styles.iconBtn,
+                                ...(canMoveUp ? {} : styles.iconBtnBlocked),
+                              }}
+                              title={
+                                canMoveUp
+                                  ? "Move up"
+                                  : `Can't move up — dependency order required`
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                tryMove(index, index - 1);
+                              }}
+                            >
+                              ↑
+                            </button>
+                          )}
+                          {index < steps.length - 1 && (
+                            <button
+                              style={{
+                                ...styles.iconBtn,
+                                ...(canMoveDown ? {} : styles.iconBtnBlocked),
+                              }}
+                              title={
+                                canMoveDown
+                                  ? "Move down"
+                                  : `Can't move down — dependency order required`
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                tryMove(index, index + 1);
+                              }}
+                            >
+                              ↓
+                            </button>
+                          )}
+                          <button
+                            style={styles.iconBtn}
+                            title="Duplicate step"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              duplicateStep(step.id);
+                            }}
+                          >
+                            ⧉
+                          </button>
+                          <button
+                            style={{ ...styles.iconBtn, ...styles.deleteBtn }}
+                            title="Remove step"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeStep(step.id);
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
 
-                {!readOnly && (
-                  <div style={styles.cardActions}>
-                    {index > 0 && (
-                      <button
-                        style={{
-                          ...styles.iconBtn,
-                          ...(canMoveUp ? {} : styles.iconBtnBlocked),
-                        }}
-                        title={
-                          canMoveUp
-                            ? "Move up"
-                            : `Can't move up — dependency order required`
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          tryMove(index, index - 1);
-                        }}
-                      >
-                        ↑
-                      </button>
+                    {/* Dependency info */}
+                    {depLabels.length > 0 && (
+                      <div style={styles.depRow}>
+                        <span style={styles.depLabel}>needs:</span>
+                        {depLabels.map((label) => (
+                          <span key={label} style={styles.depBadge}>{label}</span>
+                        ))}
+                      </div>
                     )}
-                    {index < steps.length - 1 && (
-                      <button
-                        style={{
-                          ...styles.iconBtn,
-                          ...(canMoveDown ? {} : styles.iconBtnBlocked),
-                        }}
-                        title={
-                          canMoveDown
-                            ? "Move down"
-                            : `Can't move down — dependency order required`
-                        }
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          tryMove(index, index + 1);
-                        }}
-                      >
-                        ↓
-                      </button>
+                    {dependents.length > 0 && (
+                      <div style={styles.depRow}>
+                        <span style={styles.depLabelUsed}>used by:</span>
+                        {dependents.map((s) => (
+                          <span key={s.id} style={styles.depBadgeUsed}>{s.title}</span>
+                        ))}
+                      </div>
                     )}
-                    <button
-                      style={styles.iconBtn}
-                      title="Duplicate step"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        duplicateStep(step.id);
-                      }}
-                    >
-                      ⧉
-                    </button>
-                    <button
-                      style={{ ...styles.iconBtn, ...styles.deleteBtn }}
-                      title="Remove step"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeStep(step.id);
-                      }}
-                    >
-                      ✕
-                    </button>
                   </div>
                 )}
-              </div>
-
-              {/* Dependency info */}
-              {depLabels.length > 0 && (
-                <div style={styles.depRow}>
-                  <span style={styles.depLabel}>needs:</span>
-                  {depLabels.map((label) => (
-                    <span key={label} style={styles.depBadge}>{label}</span>
-                  ))}
-                </div>
-              )}
-              {dependents.length > 0 && (
-                <div style={styles.depRow}>
-                  <span style={styles.depLabelUsed}>used by:</span>
-                  {dependents.map((s) => (
-                    <span key={s.id} style={styles.depBadgeUsed}>{s.title}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </SortableItem>
+            );
+          }}
+        />
       </div>
     </div>
   );
@@ -207,6 +240,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex", flexDirection: "column", gap: 6,
   },
   cardSelected: { background: "var(--wp-primary-muted)", border: "1px solid var(--wp-primary-border)" },
+  cardDragOverlay: {
+    boxShadow: "0 4px 16px rgba(0,0,0,0.25)", border: "1px solid var(--wp-primary-border)",
+    background: "var(--wp-surface)", opacity: 0.95,
+  },
   cardMain: { display: "flex", alignItems: "center", justifyContent: "space-between" },
   cardLeft: { display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 },
   cardIndex: {
