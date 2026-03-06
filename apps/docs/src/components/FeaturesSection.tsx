@@ -66,7 +66,7 @@ export function FeaturesSection() {
                 background: "rgba(255,255,255,0.03)",
               }}
             >
-              <div className="text-2xl mb-3">{f.icon}</div>
+              <div aria-hidden="true" className="text-2xl mb-3">{f.icon}</div>
               <h3
                 className="text-base font-semibold mb-2"
                 style={{ color: "#fff" }}
@@ -75,7 +75,7 @@ export function FeaturesSection() {
               </h3>
               <p
                 className="text-sm leading-relaxed"
-                style={{ color: "rgba(255,255,255,0.45)" }}
+                style={{ color: "rgba(255,255,255,0.65)" }}
               >
                 {f.description}
               </p>

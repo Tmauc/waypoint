@@ -6,8 +6,9 @@ export function HeroSection() {
       className="relative flex flex-col items-center justify-center text-center px-6"
       style={{ minHeight: "100vh" }}
     >
-      {/* Gradient fade at bottom */}
+      {/* Gradient fade at bottom — decorative */}
       <div
+        aria-hidden="true"
         className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none"
         style={{
           background: "linear-gradient(to bottom, transparent, #050510)",
@@ -26,6 +27,7 @@ export function HeroSection() {
           }}
         >
           <span
+            aria-hidden="true"
             className="w-1.5 h-1.5 rounded-full"
             style={{ background: "#00d4ff", boxShadow: "0 0 6px #00d4ff" }}
           />
@@ -98,10 +100,11 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Scroll hint — fixed at bottom of section */}
+      {/* Scroll hint — decorative */}
       <div
+        aria-hidden="true"
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
-        style={{ color: "rgba(255,255,255,0.25)" }}
+        style={{ color: "rgba(255,255,255,0.4)" }}
       >
         <span className="text-xs tracking-widest uppercase">Scroll</span>
         <svg

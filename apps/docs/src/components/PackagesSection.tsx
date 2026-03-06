@@ -56,7 +56,7 @@ export function PackagesSection() {
               }}
             >
               <div>
-                <div
+                <h3
                   className="text-xs font-mono font-semibold mb-3 px-2 py-1 rounded inline-block"
                   style={{
                     color: pkg.accent,
@@ -64,10 +64,10 @@ export function PackagesSection() {
                   }}
                 >
                   {pkg.name}
-                </div>
+                </h3>
                 <p
                   className="text-sm leading-relaxed"
-                  style={{ color: "rgba(255,255,255,0.55)" }}
+                  style={{ color: "rgba(255,255,255,0.7)" }}
                 >
                   {pkg.description}
                 </p>

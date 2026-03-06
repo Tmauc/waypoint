@@ -65,6 +65,8 @@ export function BuilderSection() {
 
         {/* Builder mockup */}
         <div
+          role="img"
+          aria-label="Screenshot of the Waypoint Builder interface showing a 3-column editor with steps, fields, and configuration panels"
           className="rounded-2xl overflow-hidden mb-12"
           style={{
             border: "1px solid rgba(245,158,11,0.15)",
@@ -278,6 +280,9 @@ function MockBtn({
 }) {
   return (
     <button
+      type="button"
+      aria-hidden="true"
+      tabIndex={-1}
       className="text-xs px-3 py-1.5 rounded font-medium"
       style={
         accent
