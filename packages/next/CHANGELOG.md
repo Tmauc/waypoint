@@ -1,5 +1,14 @@
 # @waypointjs/next
 
+## 0.1.6
+
+### Patch Changes
+
+- Schema-driven multi-step journey framework for React & Next.js — define steps, fields, validation
+- Updated dependencies
+  - @waypointjs/core@0.1.6
+  - @waypointjs/react@0.1.6
+
 ## 0.1.5
 
 ### Patch Changes
