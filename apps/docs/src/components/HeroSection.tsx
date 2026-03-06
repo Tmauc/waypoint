@@ -29,7 +29,7 @@ export function HeroSection() {
             className="w-1.5 h-1.5 rounded-full"
             style={{ background: "#00d4ff", boxShadow: "0 0 6px #00d4ff" }}
           />
-          v0.1.0 — Beta
+          v0.1.2 — Beta
         </span>
 
         {/* Title */}
