@@ -55,7 +55,6 @@ function readPersistedState(storageKey: string): JourneyState | null {
     const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    // Zustand persist wraps state in { state: {...}, version: n }
     return parsed?.state ?? null;
   } catch {
     return null;
@@ -73,14 +72,21 @@ function clearPersistedState(storageKey: string) {
 function JourneyProgressBadge({ completedSteps, totalSteps }: { completedSteps: number; totalSteps: number }) {
   const pct = Math.round((completedSteps / totalSteps) * 100);
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 999, overflow: "hidden" }}>
         <div
-          className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-          style={{ width: `${pct}%` }}
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: "linear-gradient(90deg, #a78bfa, #818cf8)",
+            borderRadius: 999,
+            transition: "width 500ms",
+          }}
         />
       </div>
-      <span className="text-xs text-gray-500 shrink-0">{completedSteps}/{totalSteps} étapes</span>
+      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>
+        {completedSteps}/{totalSteps} étapes
+      </span>
     </div>
   );
 }
@@ -104,43 +110,103 @@ function JourneyCardItem({
   const resumeUrl = hasProgress && currentStepIdx >= 0 ? journey.steps[currentStepIdx].url : journey.startUrl;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4">
+    <div
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 16,
+        padding: 24,
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
         <div>
-          <h2 className="text-base font-bold text-gray-900">{journey.name}</h2>
-          <p className="text-sm text-gray-500 mt-1">{journey.description}</p>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: "#fff", margin: 0 }}>{journey.name}</h2>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>{journey.description}</p>
         </div>
         {isCompleted && (
-          <span className="shrink-0 text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#34d399",
+              background: "rgba(52,211,153,0.1)",
+              padding: "3px 10px",
+              borderRadius: 999,
+              border: "1px solid rgba(52,211,153,0.2)",
+            }}
+          >
             Terminé ✓
           </span>
         )}
         {!isCompleted && hasProgress && (
-          <span className="shrink-0 text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
+          <span
+            style={{
+              flexShrink: 0,
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#a78bfa",
+              background: "rgba(167,139,250,0.1)",
+              padding: "3px 10px",
+              borderRadius: 999,
+              border: "1px solid rgba(167,139,250,0.2)",
+            }}
+          >
             En cours
           </span>
         )}
       </div>
 
       {/* Steps list */}
-      <ol className="flex gap-2">
+      <ol style={{ display: "flex", gap: 8, listStyle: "none", margin: 0, padding: 0 }}>
         {journey.steps.map((step, i) => {
           const isDone = isCompleted || (hasProgress && i < currentStepIdx);
           const isActive = hasProgress && i === currentStepIdx && !isCompleted;
           return (
-            <li key={step.id} className="flex items-center gap-2 flex-1">
+            <li key={step.id} style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
               <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0
-                  ${isDone ? "bg-indigo-500 text-white" : isActive ? "bg-indigo-100 text-indigo-600 ring-2 ring-indigo-400" : "bg-gray-100 text-gray-400"}`}
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  background: isDone
+                    ? "rgba(167,139,250,0.2)"
+                    : isActive
+                    ? "rgba(167,139,250,0.12)"
+                    : "rgba(255,255,255,0.05)",
+                  color: isDone ? "#a78bfa" : isActive ? "#c4b5fd" : "rgba(255,255,255,0.25)",
+                  border: isActive ? "1px solid rgba(167,139,250,0.4)" : "1px solid transparent",
+                }}
               >
                 {isDone ? "✓" : i + 1}
               </div>
-              <span className={`text-xs font-medium ${isDone ? "text-indigo-600" : isActive ? "text-gray-900" : "text-gray-400"} hidden sm:block`}>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: isDone ? "#a78bfa" : isActive ? "#fff" : "rgba(255,255,255,0.25)",
+                }}
+              >
                 {step.title}
               </span>
               {i < journey.steps.length - 1 && (
-                <div className={`flex-1 h-px ${isDone ? "bg-indigo-300" : "bg-gray-200"}`} />
+                <div
+                  style={{
+                    flex: 1,
+                    height: 1,
+                    background: isDone ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.07)",
+                  }}
+                />
               )}
             </li>
           );
@@ -153,13 +219,30 @@ function JourneyCardItem({
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          paddingTop: 16,
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
         {isCompleted ? (
           <>
-            <span className="text-sm text-gray-500 flex-1">Parcours terminé avec succès.</span>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", flex: 1 }}>Parcours terminé avec succès.</span>
             <button
               onClick={onReset}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg transition-colors"
+              style={{
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.5)",
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
             >
               Recommencer
             </button>
@@ -168,13 +251,30 @@ function JourneyCardItem({
           <>
             <Link
               href={resumeUrl}
-              className="px-5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors"
+              style={{
+                padding: "7px 18px",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#fff",
+                background: "rgba(167,139,250,0.2)",
+                border: "1px solid rgba(167,139,250,0.3)",
+                borderRadius: 8,
+                textDecoration: "none",
+              }}
             >
               Reprendre →
             </Link>
             <button
               onClick={onReset}
-              className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors"
+              style={{
+                padding: "6px 14px",
+                fontSize: 13,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.35)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
             >
               Réinitialiser
             </button>
@@ -182,7 +282,16 @@ function JourneyCardItem({
         ) : (
           <Link
             href={journey.startUrl}
-            className="px-5 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors"
+            style={{
+              padding: "7px 18px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#fff",
+              background: "rgba(167,139,250,0.2)",
+              border: "1px solid rgba(167,139,250,0.3)",
+              borderRadius: 8,
+              textDecoration: "none",
+            }}
           >
             Commencer →
           </Link>
@@ -218,16 +327,16 @@ function JourneysContent() {
   }
 
   return (
-    <div className="flex flex-col items-center px-4 py-10 min-h-full">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Mes parcours</h1>
-          <p className="text-sm text-gray-500 mt-1">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 16px", minHeight: "100%" }}>
+      <div style={{ width: "100%", maxWidth: 640 }}>
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", margin: 0 }}>Mes parcours</h1>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
             Démarrez ou reprenez un parcours. Chaque parcours est sauvegardé indépendamment.
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {JOURNEYS.map((journey) => (
             <JourneyCardItem
               key={journey.id}
@@ -239,9 +348,19 @@ function JourneysContent() {
           ))}
         </div>
 
-        <div className="mt-8 rounded-xl bg-gray-50 border border-gray-200 p-4 text-xs text-gray-500">
-          <strong className="text-gray-700">Comment tester le multi-parcours ?</strong>
-          <ol className="mt-2 space-y-1 list-decimal list-inside">
+        <div
+          style={{
+            marginTop: 32,
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            padding: 16,
+            fontSize: 12,
+            color: "rgba(255,255,255,0.35)",
+          }}
+        >
+          <strong style={{ color: "rgba(255,255,255,0.55)" }}>Comment tester le multi-parcours ?</strong>
+          <ol style={{ marginTop: 8, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 4 }}>
             <li>Commencez « Création de projet » et avancez jusqu'à l'étape 2 ou 3.</li>
             <li>Revenez ici et démarrez « Versement » — terminez-le entièrement.</li>
             <li>Revenez ici et cliquez « Reprendre » sur « Création de projet » : vous retrouverez votre avancement.</li>
@@ -254,7 +373,7 @@ function JourneysContent() {
 
 export default function JourneysPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-full text-gray-400 text-sm">Chargement…</div>}>
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Chargement…</div>}>
       <JourneysContent />
     </Suspense>
   );

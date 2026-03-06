@@ -8,6 +8,24 @@ import type { ResolvedField } from "@waypoint/core";
 // Field
 // ---------------------------------------------------------------------------
 
+const inputBase: React.CSSProperties = {
+  width: "100%",
+  borderRadius: 8,
+  border: "1px solid rgba(255,255,255,0.1)",
+  padding: "8px 12px",
+  fontSize: 13,
+  background: "rgba(255,255,255,0.04)",
+  color: "#fff",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const inputError: React.CSSProperties = {
+  ...inputBase,
+  border: "1px solid rgba(239,68,68,0.5)",
+  background: "rgba(239,68,68,0.06)",
+};
+
 function Field({
   field,
   register,
@@ -19,16 +37,13 @@ function Field({
   error?: string;
 }) {
   const { id, type, label, placeholder, options } = field.definition;
-
-  const base =
-    "w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 " +
-    (error ? "border-red-400 bg-red-50" : "border-gray-200 bg-white");
+  const style = error ? inputError : inputBase;
 
   if (type === "select") {
     return (
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
-        <select {...register(id)} className={base}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
+        <select {...register(id)} style={{ ...style, colorScheme: "dark" }}>
           <option value="">— Sélectionner —</option>
           {options?.map((o) => (
             <option key={String(o.value)} value={String(o.value)}>
@@ -36,39 +51,39 @@ function Field({
             </option>
           ))}
         </select>
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0 }}>{error}</p>}
       </div>
     );
   }
 
   if (type === "checkbox") {
     return (
-      <div className="flex items-center gap-2">
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           id={id}
           type="checkbox"
           {...register(id)}
-          className="h-4 w-4 rounded border-gray-300 accent-indigo-500"
+          style={{ width: 16, height: 16, accentColor: "#a78bfa", cursor: "pointer" }}
         />
-        <label htmlFor={id} className="text-sm text-gray-700 cursor-pointer">
+        <label htmlFor={id} style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", cursor: "pointer" }}>
           {label}
         </label>
-        {error && <p className="text-xs text-red-500 ml-2">{error}</p>}
+        {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0, marginLeft: 8 }}>{error}</p>}
       </div>
     );
   }
 
   if (type === "textarea") {
     return (
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <label style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>{label}</label>
         <textarea
           {...register(id)}
           placeholder={placeholder}
           rows={3}
-          className={base + " resize-none"}
+          style={{ ...style, resize: "none" }}
         />
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0 }}>{error}</p>}
       </div>
     );
   }
@@ -82,8 +97,8 @@ function Field({
     : "text";
 
   return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label htmlFor={id} style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.55)" }}>
         {label}
       </label>
       <input
@@ -91,9 +106,9 @@ function Field({
         type={htmlType}
         placeholder={placeholder}
         {...register(id)}
-        className={base}
+        style={style}
       />
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p style={{ fontSize: 11, color: "#f87171", margin: 0 }}>{error}</p>}
     </div>
   );
 }
@@ -119,44 +134,58 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
 
   if (!currentStep) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
         Chargement…
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center px-4 py-10 min-h-full">
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 16px", minHeight: "100%" }}>
       {/* Breadcrumb */}
-      <div className="w-full max-w-lg mb-6 flex items-center gap-2 text-sm text-gray-500">
-        <Link href="/journeys" className="hover:text-indigo-600 transition-colors">
+      <div style={{ width: "100%", maxWidth: 512, marginBottom: 24, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.35)" }}>
+        <Link href="/journeys" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>
           Parcours
         </Link>
         <span>›</span>
-        <Link href={journeyHref} className="hover:text-indigo-600 transition-colors">
+        <Link href={journeyHref} style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>
           {journeyName}
         </Link>
         <span>›</span>
-        <span className="text-gray-700 font-medium">{currentStep.definition.title}</span>
+        <span style={{ color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>{currentStep.definition.title}</span>
       </div>
 
       {/* Progress */}
-      <div className="w-full max-w-lg mb-8">
-        <div className="flex justify-between text-xs text-gray-400 mb-1.5">
+      <div style={{ width: "100%", maxWidth: 512, marginBottom: 28 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 6 }}>
           <span>{progress}% complété</span>
           <span>{isLastStep ? "Dernière étape" : "En cours…"}</span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div style={{ height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 999, overflow: "hidden" }}>
           <div
-            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
+            style={{
+              height: "100%",
+              width: `${progress}%`,
+              background: "linear-gradient(90deg, #a78bfa, #818cf8)",
+              borderRadius: 999,
+              transition: "width 500ms",
+            }}
           />
         </div>
       </div>
 
       {/* Card */}
-      <div className="w-full max-w-lg bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-6">
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 512,
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 16,
+          padding: 32,
+        }}
+      >
+        <h1 style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "0 0 24px" }}>
           {currentStep.definition.title}
         </h1>
 
@@ -165,7 +194,7 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
             e.preventDefault();
             handleSubmit();
           }}
-          className="space-y-5"
+          style={{ display: "flex", flexDirection: "column", gap: 20 }}
         >
           {fields.map((field) => (
             <Field
@@ -181,20 +210,42 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
           ))}
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingTop: 20,
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
             {!isFirstStep ? (
               <button
                 type="button"
                 onClick={goBack}
                 disabled={isSubmitting}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "rgba(255,255,255,0.4)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 ← Retour
               </button>
             ) : (
               <Link
                 href="/journeys"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                style={{
+                  padding: "6px 14px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "rgba(255,255,255,0.4)",
+                  textDecoration: "none",
+                }}
               >
                 ← Quitter
               </Link>
@@ -203,7 +254,17 @@ export function StepRenderer({ journeyName, journeyHref }: { journeyName: string
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                padding: "8px 22px",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#fff",
+                background: "rgba(167,139,250,0.2)",
+                border: "1px solid rgba(167,139,250,0.35)",
+                borderRadius: 8,
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                opacity: isSubmitting ? 0.6 : 1,
+              }}
             >
               {isSubmitting
                 ? "Enregistrement…"

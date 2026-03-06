@@ -236,7 +236,7 @@ export function BuilderSection() {
         {/* CTAs */}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <a
-            href="https://waypoint-demo.vercel.app/builder"
+            href={`${process.env.NEXT_PUBLIC_DEMO_URL ?? "http://localhost:3001"}/builder`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"

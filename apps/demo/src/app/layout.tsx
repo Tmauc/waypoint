@@ -28,17 +28,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         >
           {/* Logo */}
-          <span
+          <a
+            href={process.env.NEXT_PUBLIC_DOCS_URL ?? "http://localhost:3002"}
             style={{
               fontWeight: 900,
               fontSize: 15,
               letterSpacing: "-0.03em",
               color: "#fff",
               marginRight: 24,
+              textDecoration: "none",
             }}
           >
             <span style={{ color: "#a78bfa" }}>◈</span>{" "}waypoint
-          </span>
+          </a>
 
           {/* Separator */}
           <span style={{ color: "rgba(255,255,255,0.12)", marginRight: 20, fontSize: 18 }}>|</span>
