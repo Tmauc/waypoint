@@ -1,5 +1,14 @@
 # @waypointjs/devtools
 
+## 0.1.5
+
+### Patch Changes
+
+- Schema-driven multi-step journey framework for React & Next.js — conditional steps, field visibility, validation with
+- Updated dependencies
+  - @waypointjs/core@0.1.5
+  - @waypointjs/next@0.1.5
+
 ## 0.1.4
 
 ### Patch Changes

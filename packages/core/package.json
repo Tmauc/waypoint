@@ -1,6 +1,6 @@
 {
   "name": "@waypointjs/core",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Framework-agnostic journey navigation store and utilities",
   "keywords": [
     "navigation",

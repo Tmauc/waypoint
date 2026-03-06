@@ -1,6 +1,6 @@
 {
   "name": "@waypointjs/react",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "React hooks for waypoint journey navigation",
   "keywords": [
     "navigation",

@@ -849,6 +849,34 @@ Pure function — evaluates all conditions and returns the visible tree.
 
 const tree = resolveTree(schema, data, externalVars);
 // { steps: ResolvedStep[], hiddenSteps: ResolvedStep[], missingExternalVars: string[] }
+
+// With external enum resolution:
+const tree = resolveTree(schema, data, externalVars, externalEnums);
+```
+
+When `externalEnums` is provided, fields with `externalEnumId` will have their `resolvedOptions` populated.
+Use `field.resolvedOptions ?? field.definition.options` when rendering select/multiselect/radio fields.
+
+### ResolvedField
+
+```ts
+interface ResolvedField {
+  definition: FieldDefinition;
+  visible: boolean;
+  dependenciesMet: boolean;
+  /** Populated when field.externalEnumId matches a provided external enum */
+  resolvedOptions?: SelectOption[];
+}
+```
+
+### ExternalEnum
+
+```ts
+interface ExternalEnum {
+  id: string;
+  label: string;
+  values: SelectOption[];  // { label: string; value: string | number }[]
+}
 ```
 
 See [Tree Resolution](/concepts/history) for full documentation.
@@ -875,11 +903,39 @@ Generates a Zod validation schema from an array of resolved fields.
 ```ts
 
 
-const zodSchema = buildZodSchema(fields); // z.ZodObject
+const zodSchema = buildZodSchema(fields);
+// or with external enum resolution (required for inEnum / notInEnum rules):
+const zodSchema = buildZodSchema(fields, externalEnums);
+
 const result = zodSchema.safeParse(formValues);
 ```
 
-Supported validation rules: `required`, `min`, `max`, `minLength`, `maxLength`, `email`, `url`, `regex`, `custom`.
+### Supported validation rule types
+
+| Rule type | Description | Needs `value` |
+|---|---|---|
+| `required` | Field must be non-empty | — |
+| `min` | Numeric minimum (inclusive) | number |
+| `max` | Numeric maximum (inclusive) | number |
+| `minLength` | String minimum length | number |
+| `maxLength` | String maximum length | number |
+| `email` | Email format | — |
+| `url` | URL format | — |
+| `regex` | Value must match regex | regex string |
+| `equals` | Value must equal | any |
+| `notEquals` | Value must not equal | any |
+| `greaterThan` | Value must be `>` | number |
+| `greaterThanOrEqual` | Value must be `>=` | number |
+| `lessThan` | Value must be `<` | number |
+| `lessThanOrEqual` | Value must be `<=` | number |
+| `contains` | String must contain | string |
+| `notContains` | String must not contain | string |
+| `matches` | String must match regex | regex string |
+| `inEnum` | Value must be one of an external enum's values | enum id |
+| `notInEnum` | Value must not be in an external enum | enum id |
+| `custom` | Custom registered validator | — |
+
+For `inEnum` / `notInEnum`, pass the same `externalEnums` array to `buildZodSchema` that you pass to `resolveTree`.
 
 ```ts
 // Register a custom validator before using it
@@ -897,15 +953,34 @@ registerCustomValidator("strongPassword", (value) => {
 ```ts
 
 
-// Evaluate a ConditionGroup
-evaluateConditionGroup(group, data, externalVars) // boolean
+// Evaluate a ConditionGroup — pass externalEnums to support inEnum / notInEnum operators
+evaluateConditionGroup(group, data, externalVars, externalEnums?) // boolean
 
-// Shorthand — undefined returns true
-isVisible(group, data, externalVars)              // boolean
+// Shorthand — undefined group returns true (always visible)
+isVisible(group, data, externalVars, externalEnums?)              // boolean
 
 // Resolve a dot-path to its value
 resolveFieldValue("stepId.fieldId", data, externalVars) // unknown
+resolveFieldValue("$ext.varId", data, externalVars)     // unknown
 ```
+
+### ConditionOperator
+
+All supported operators:
+
+```ts
+type ConditionOperator =
+  | "equals" | "notEquals"
+  | "greaterThan" | "greaterThanOrEqual"
+  | "lessThan"    | "lessThanOrEqual"
+  | "contains"    | "notContains"
+  | "in"          | "notIn"          // value is a comma-separated list (builder) or array (programmatic)
+  | "exists"      | "notExists"
+  | "matches"                         // regex string in value
+  | "inEnum"      | "notInEnum";      // value is an ExternalEnum id
+```
+
+For `inEnum` / `notInEnum`, `rule.value` is the `ExternalEnum.id`. The enum's values are resolved at evaluation time from the `externalEnums` argument.
 
 ---
 
@@ -988,6 +1063,7 @@ const state = useWaypoint(store);
 | Parameter | Type | Description |
 |---|---|---|
 | `store` | `StoreApi<WaypointRuntimeStore>` | Store instance from `createRuntimeStore()` |
+| `externalEnums` | `ExternalEnum[]` | Optional — app-provided option lists, resolved into `ResolvedField.resolvedOptions` |
 
 ### Return value
 
@@ -1172,6 +1248,8 @@ A React provider that initialises an isolated Zustand store, handles persistence
 | `onComplete` | `(data) => void \| Promise<void>` | | Called when the last step is submitted |
 | `onStepComplete` | `(stepId, stepData) => void \| Promise<void>` | | Called after each step is validated and submitted |
 | `onDataChange` | `(data) => void` | | Called on every field value change |
+| `customFieldTypes` | `CustomTypeDefinition[]` | | App-provided custom field types — accessible via `useWaypointRuntimeContext().customFieldTypes` |
+| `externalEnums` | `ExternalEnum[]` | | App-provided option lists — resolved into `ResolvedField.resolvedOptions` by the tree resolver |
 | `children` | `React.ReactNode` | ✓ | Step pages |
 
 ### Init / Resume logic
@@ -1315,6 +1393,8 @@ interface WaypointRuntimeContextValue {
   onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
   onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  customFieldTypes?: CustomTypeDefinition[];
+  externalEnums?: ExternalEnum[];
 }
 ```
 
@@ -1358,6 +1438,9 @@ A self-contained editor component that renders a 3-column layout (step list, fie
 | `theme` | `WaypointTheme` | | Custom theme (colors, fonts) |
 | `className` | `string` | | CSS class on the root element |
 | `style` | `React.CSSProperties` | | Inline style on the root element |
+| `readOnly` | `boolean` | | Disable all editing — view-only mode |
+| `appCustomTypes` | `CustomTypeDefinition[]` | | Custom field types — appear in the field type dropdown under "Custom" |
+| `externalEnums` | `ExternalEnum[]` | | App-provided option lists — select/multiselect/radio fields can reference them by id |
 
 ### Layout
 
@@ -1375,10 +1458,24 @@ The builder requires explicit dimensions — set `height: 100%` on a sized paren
 
 Clicking **▶ Tester** in the toolbar switches to a **split view**:
 
-- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden
+- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden; and, if the schema declares `externalVariables`, an **External Variables** panel with mock value inputs (text, number, checkbox for boolean). Mock values sync immediately to the runtime store — conditions re-evaluate in real time.
 - **Right panel** — live step renderer with field inputs, inline validation, progress bar, and Prev/Next navigation
 
 Click **← Éditer** to return to the builder. The preview uses an isolated in-memory store — no localStorage, no side effects.
+
+### Read-only mode
+
+Pass `readOnly` to display a schema without allowing modifications:
+
+```tsx
+
+```
+
+In read-only mode:
+- All add/remove/duplicate/reorder controls are hidden
+- All inputs in the step and field editors are disabled
+- The toolbar shows only "Export JSON" + a "View only" badge
+- Preview mode (`▶ Tester`) is disabled
 
 ### Theme
 
@@ -1390,6 +1487,136 @@ Click **← Éditer** to return to the builder. The preview uses an isolated in-
 ```
 
 Built-in themes: `DEFAULT_THEME`, `DARK_THEME`. All values are mapped to CSS custom properties at the root element.
+
+---
+
+---
+
+## External Enums
+
+External enums are app-provided option lists that you inject into the builder (and runner) at runtime. The schema stores only a **reference** (`externalEnumId`) — the actual values are never written to the schema JSON, which keeps schemas portable across environments.
+
+### Defining enums
+
+```tsx
+
+
+const externalEnums: ExternalEnum[] = [
+  {
+    id: "countries",
+    label: "Countries",
+    values: [
+      { value: "fr", label: "France" },
+      { value: "de", label: "Germany" },
+      { value: "us", label: "United States" },
+    ],
+  },
+  {
+    id: "job_roles",
+    label: "Job roles",
+    values: [
+      { value: "dev", label: "Developer" },
+      { value: "pm", label: "Product Manager" },
+    ],
+  },
+];
+
+
+```
+
+### Using enums in the builder
+
+Once injected, enums appear throughout the builder UI:
+
+**Field options source** — For `select`, `multiselect`, and `radio` fields, the field editor shows an "Options source" dropdown. Selecting an enum replaces the hardcoded `options` array with `externalEnumId`. The field list shows a `⊞ label` badge.
+
+**Condition builder (visibility)** — Every condition rule has an operator dropdown. Two special operators are available when enums exist:
+- `is in enum` — the field's value must be one of the enum's values
+- `not in enum` — the field's value must not be in the enum
+
+The value input for these operators becomes a dropdown to select the target enum by name. For all other operators, a `⊞` picker button appears next to the text input to inject any enum value into the rule value field.
+
+**Validation builder** — The same `is in enum` / `not in enum` rule types are available in the validation rules modal.
+
+### Passing enums to the runner
+
+Use the same array with `WaypointRunner` so enum-based conditions and validations evaluate correctly at runtime:
+
+```tsx
+<WaypointRunner schema={schema} externalEnums={externalEnums}>
+  {children}
+</WaypointRunner>
+```
+
+And pass it to `buildZodSchema` when building Zod schemas manually:
+
+```ts
+const zodSchema = buildZodSchema(fields, externalEnums);
+```
+
+---
+
+## Custom Types
+
+Custom types are app-specific field types that extend the built-in set (`text`, `select`, `number`, etc.). They appear in the field type dropdown under a **Custom** optgroup. When selected, their `defaultValidation` (if defined) is auto-applied to the field.
+
+### Defining custom types
+
+```tsx
+
+
+const appCustomTypes: CustomTypeDefinition[] = [
+  {
+    id: "rich-text",
+    label: "Rich Text",
+    icon: "📝",
+    defaultValidation: [{ type: "required", message: "Content is required" }],
+  },
+  {
+    id: "date-range",
+    label: "Date Range",
+    icon: "📅",
+  },
+  {
+    id: "file-upload",
+    label: "File Upload",
+    icon: "📎",
+    metadata: { accept: "image/*,application/pdf" },
+  },
+];
+
+
+```
+
+### Using custom types at runtime
+
+The `type` value is stored as-is in the schema. When rendering fields, check for custom types and delegate to your own renderer:
+
+```tsx
+// With @waypointjs/next:
+<WaypointRunner schema={schema} customFieldTypes={appCustomTypes}>
+  {children}
+</WaypointRunner>
+
+// In your step page, check field.definition.type:
+{fields.map((field) => {
+  const isCustom = appCustomTypes.some((t) => t.id === field.definition.type);
+  if (isCustom) return ;
+  // ... standard fields
+})}
+```
+
+### CustomTypeDefinition
+
+```ts
+interface CustomTypeDefinition {
+  id: string;                        // stored as field.type in the schema
+  label: string;                     // shown in the type dropdown
+  icon?: string;                     // displayed in the builder UI
+  defaultValidation?: ValidationRule[]; // auto-applied when the type is selected
+  metadata?: Record<string, unknown>; // passed through to your runtime renderer
+}
+```
 
 ---
 
@@ -1409,6 +1636,16 @@ const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
 |---|---|
 | `loadSchema(schema)` | Load a schema into the builder |
 | `resetSchema()` | Reset to the empty default schema |
+| `addStep(partial?)` | Add a step, returns new step ID |
+| `updateStep(stepId, updates)` | Update step properties |
+| `removeStep(stepId)` | Remove a step |
+| `duplicateStep(stepId)` | Clone step with new IDs, insert after original |
+| `reorderSteps(from, to)` | Reorder steps by index |
+| `addField(stepId, partial?)` | Add a field to a step, returns new field ID |
+| `updateField(stepId, fieldId, updates)` | Update field properties |
+| `removeField(stepId, fieldId)` | Remove a field |
+| `duplicateField(stepId, fieldId)` | Clone field with new ID, insert after original |
+| `reorderFields(stepId, from, to)` | Reorder fields within a step |
 
 `useBuilderStore` is a singleton — there can only be one builder instance per page. For multiple builders, you'd need to isolate each in its own React root.
 
