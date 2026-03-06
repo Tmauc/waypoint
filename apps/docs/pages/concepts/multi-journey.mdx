@@ -1,51 +1,129 @@
 ---
-title: Multi-Journey
+title: Persistence
 ---
 
-# Multi-Journey
+import { Callout } from "nextra/components";
 
-Waypoint supports multiple independent journeys running in parallel, each with completely isolated state.
+# Persistence
 
-## Use cases
+Waypoint supports three persistence strategies. The strategy is declared in your schema's `persistenceMode` field and activated by `WaypointRunner`.
 
-- A multi-product checkout: one journey per product type
-- Wizard A starts before Wizard B finishes
-- Background journey that runs alongside a foreground flow
+## Modes
 
-## Creating multiple journeys
+### `"zustand"` — localStorage (default for SPAs)
 
-Each journey needs a unique `journeyId`:
+When `persistenceMode: "zustand"`, `WaypointRunner` activates the Zustand persist middleware. Journey data is automatically saved to `localStorage` under the key `waypoint-runtime-{schemaId}`.
 
-```ts
-const store = useWaypointStore.getState();
-store.createJourney("account-setup", ACCOUNT_TREE);
-store.createJourney("subscription", SUBSCRIPTION_TREE);
-```
-
-## Active journey
-
-Only one journey is "active" at a time. The active journey is what `useWaypoint()` (without a `journeyId` option) operates on.
+On the next visit, `WaypointRunner`:
+1. Detects the saved state via `hasPersistedState(store, schemaId)`
+2. Calls `resume(schema, externalVars)` instead of `init()` — preserving `data`, `currentStepId` and `history`
+3. Navigates the user to `findLastValidStep()` — their furthest accessible step given current data
 
 ```ts
-store.setActiveJourney("account-setup");
+// schema.ts
+export const schema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  persistenceMode: "zustand",  // ← enable localStorage persistence
+  steps: [ /* ... */ ],
+};
 ```
 
-## Targeting a specific journey
+<Callout type="info">
+  Only `{ schemaId, data, currentStepId, history, completed }` are persisted — not the full schema or callbacks. The schema is always re-provided by your app at mount time.
+</Callout>
 
-Pass `journeyId` explicitly to operate on a non-active journey:
+### `"backend-step"` — Server-side, per step
+
+Call your backend after each step completes. Wire up the `onStepComplete` callback on `WaypointRunner`:
 
 ```tsx
-const nav = useWaypoint({ journeyId: "subscription" });
-nav.goNext();
+<WaypointRunner
+  schema={schema}
+  onStepComplete={async (stepId, stepData) => {
+    await api.saveStep(schema.id, stepId, stepData);
+  }}
+  onComplete={async (allData) => {
+    await api.completeJourney(schema.id, allData);
+    router.push("/success");
+  }}
+>
+  {children}
+</WaypointRunner>
 ```
 
-## Cleanup
+### `"backend-manual"` — Server-side, on demand
+
+Use `onDataChange` to receive every data mutation and decide yourself when to persist:
+
+```tsx
+<WaypointRunner
+  schema={schema}
+  onDataChange={(data) => {
+    debouncedSave(data);
+  }}
+>
+  {children}
+</WaypointRunner>
+```
+
+## Resume via `fetchData`
+
+For backend-persisted journeys, pass `fetchData` to `WaypointRunner` to reload saved data on mount:
+
+```tsx
+<WaypointRunner
+  schema={schema}
+  fetchData={async () => {
+    const saved = await api.loadJourney(schema.id);
+    return saved.data; // Record<stepId, Record<fieldId, value>>
+  }}
+  onComplete={handleComplete}
+>
+  {children}
+</WaypointRunner>
+```
+
+`fetchData` is called once during init. If it returns data, `WaypointRunner` calls `init(schema, { data: fetchedData })` and navigates to `findLastValidStep()`.
+
+## Init vs. Resume
+
+| Situation | Action |
+|---|---|
+| No persisted state (first visit) | `init(schema)` — navigate to first step |
+| Persisted state found (`"zustand"` mode) | `resume(schema)` — keep data, navigate to last valid step |
+| `fetchData` returns data | `init(schema, { data })` — navigate to last valid step |
+| External vars changed after mount | `store.setExternalVar(varId, value)` — tree re-resolves automatically |
+
+## Resetting
+
+To restart a journey and clear persisted state:
 
 ```ts
-// Deferred deletion (safe during renders)
-store.markJourneyForDeletion("account-setup");
-store.cleanMarkedJourneys(); // call at a safe moment
+// Reset store and navigate back to step 1
+store.getState().init(schema);
 
-// Immediate deletion
-store.deleteJourney("account-setup");
+// Or from a hook
+const { reset } = useWaypoint(store);
+reset();
 ```
+
+For `"zustand"` mode this clears both the in-memory store and the localStorage entry.
+
+## Multiple concurrent journeys
+
+Each `<WaypointRunner>` creates its **own isolated store** via `useRef`. You can mount multiple runners simultaneously with no shared state:
+
+```tsx
+// Two independent journeys on the same page
+<WaypointRunner schema={checkoutSchema}>
+  <CheckoutFlow />
+</WaypointRunner>
+
+<WaypointRunner schema={profileSchema}>
+  <ProfileFlow />
+</WaypointRunner>
+```
+
+Each runner persists under its own key (`waypoint-runtime-checkout` / `waypoint-runtime-profile`).

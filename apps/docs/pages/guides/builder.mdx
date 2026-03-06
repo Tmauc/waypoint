@@ -1,0 +1,172 @@
+---
+title: Builder
+---
+
+import { Callout } from "nextra/components";
+
+# Builder Guide
+
+`@waypoint/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
+
+## Installation
+
+```bash
+pnpm add @waypoint/builder @waypoint/core
+```
+
+## Basic embed
+
+```tsx
+"use client";
+
+import { WaypointBuilder } from "@waypoint/builder";
+
+export default function BuilderPage() {
+  return (
+    <div style={{ height: "100vh" }}>
+      <WaypointBuilder
+        onSave={(schema) => {
+          console.log("Schema saved:", schema);
+        }}
+        onChange={(schema) => {
+          // Live updates — auto-save drafts, display preview, etc.
+        }}
+      />
+    </div>
+  );
+}
+```
+
+<Callout type="warning">
+  The builder needs an explicit height on its parent container — it fills 100% of the available space.
+</Callout>
+
+## Loading an existing schema
+
+Pass a `WaypointSchema` (loaded from your API, a file, or another source) as `defaultValue`:
+
+```tsx
+const [schema, setSchema] = useState<WaypointSchema | undefined>();
+
+useEffect(() => {
+  fetch(`/api/schemas/${id}`).then((r) => r.json()).then(setSchema);
+}, [id]);
+
+if (!schema) return <Spinner />;
+
+return (
+  <div style={{ height: "100vh" }}>
+    <WaypointBuilder
+      defaultValue={schema}
+      onSave={async (updated) => {
+        await fetch(`/api/schemas/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(updated),
+        });
+      }}
+    />
+  </div>
+);
+```
+
+## What you can build in the UI
+
+The builder supports the full `WaypointSchema` feature set:
+
+| Feature | Builder UI |
+|---|---|
+| Steps | Add, rename, reorder, delete |
+| Step URL | Editable text input |
+| Step conditions | Visual condition builder with AND/OR groups |
+| Fields | Add, reorder, configure type, label, placeholder |
+| Field type | Dropdown (all 13 built-in types + custom types) |
+| Field validation | Add rules (required, email, min/max, regex…) |
+| Field conditions | Same visual builder as step conditions |
+| External variables | Declare id, type, blocking flag |
+| Persistence mode | Dropdown (zustand / backend-step / backend-manual) |
+
+## Preview mode (Test)
+
+Click **▶ Tester** in the toolbar to enter preview mode. This opens a split view:
+
+- **Left** — the resolved step list with live status: `✓` visited, `→` current, `○` upcoming, `–` hidden by condition
+- **Right** — a rendered form for the current step with field inputs and validation
+
+This lets you test conditions, validation rules, and step ordering without leaving the builder or writing any code.
+
+Click **← Éditer** to return to the editor at any time.
+
+## Exporting the schema
+
+Click **Export JSON** in the toolbar to download the schema as a `.waypoint.json` file. The file can be imported back into any builder instance.
+
+To export programmatically, read the schema from `onChange` or `onSave`:
+
+```tsx
+<WaypointBuilder
+  onSave={(schema) => {
+    const json = JSON.stringify(schema, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    // trigger download…
+  }}
+/>
+```
+
+## Validating an imported schema
+
+Use `validateSchema` from `@waypoint/core` to verify a schema before passing it to `defaultValue`:
+
+```ts
+import { validateSchema } from "@waypoint/core";
+
+const result = validateSchema(parsed);
+if (!result.valid) {
+  console.error(result.errors);
+} else {
+  setSchema(parsed);
+}
+```
+
+## Theming
+
+```tsx
+import { WaypointBuilder, DARK_THEME } from "@waypoint/builder";
+
+// Use the built-in dark theme
+<WaypointBuilder theme={DARK_THEME} />
+
+// Or override individual tokens
+<WaypointBuilder
+  theme={{
+    primary: "#6366f1",
+    canvas: "#fafafa",
+    text: "#111827",
+    border: "#e5e7eb",
+  }}
+/>
+```
+
+All theme tokens are compiled to CSS custom properties on the root element, so you can also target them with CSS:
+
+```css
+.waypoint-builder-root {
+  --wp-primary: #6366f1;
+  --wp-canvas: #fafafa;
+}
+```
+
+## Using the generated schema with WaypointRunner
+
+The schema produced by the builder is a standard `WaypointSchema` — use it directly with `WaypointRunner`:
+
+```tsx
+import { WaypointRunner, useWaypointStep } from "@waypoint/next";
+
+// schema loaded from your API (was originally built with WaypointBuilder)
+<WaypointRunner schema={schema} onComplete={handleComplete}>
+  <StepPage />
+</WaypointRunner>
+```
+
+No conversion or transformation needed.

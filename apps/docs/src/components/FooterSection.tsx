@@ -29,10 +29,10 @@ export function FooterSection() {
             { label: "API Reference", href: "/api" },
             {
               label: "GitHub",
-              href: "https://github.com/mauc/waypoint",
+              href: "https://github.com/tmauc/waypoint",
               external: true,
             },
-          ].map((link) => (
+          ].map((link) =>
             link.external ? (
               <a
                 key={link.label}
@@ -53,8 +53,8 @@ export function FooterSection() {
               >
                 {link.label}
               </Link>
-            )
-          ))}
+            ),
+          )}
         </nav>
       </div>
     </footer>

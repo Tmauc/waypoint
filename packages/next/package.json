@@ -22,7 +22,11 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@waypoint/react": "workspace:*"
+    "@hookform/resolvers": "^3.9.1",
+    "@waypoint/core": "workspace:*",
+    "@waypoint/react": "workspace:*",
+    "react-hook-form": "^7.53.2",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

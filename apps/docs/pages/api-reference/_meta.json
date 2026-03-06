@@ -1,0 +1,6 @@
+{
+  "core": "@waypoint/core",
+  "react": "@waypoint/react",
+  "next": "@waypoint/next",
+  "builder": "@waypoint/builder"
+}

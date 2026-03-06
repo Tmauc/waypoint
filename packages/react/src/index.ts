@@ -1,10 +1,5 @@
 export { useWaypoint } from "./useWaypoint";
-export type {
-  NavigationOptions,
-  NavigateToOptions,
-  RouterAdapter,
-  WaypointNavigation,
-} from "./useWaypoint";
-export { useWaypointInitializer } from "./useWaypointInitializer";
-export type { UseWaypointInitializerParams } from "./useWaypointInitializer";
-export { useStepWaypoint } from "./useStepWaypoint";
+export type { WaypointState } from "./useWaypoint";
+
+export { useWaypointStep } from "./useWaypointStep";
+export type { WaypointHeadlessStep } from "./useWaypointStep";

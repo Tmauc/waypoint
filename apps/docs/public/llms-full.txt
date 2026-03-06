@@ -1,0 +1,2163 @@
+# Waypoint — Full Documentation
+
+> Schema-driven multi-step journey framework for React & Next.js
+
+
+
+---
+
+# Waypoint
+
+**Schema-driven multi-step journey framework for React & Next.js**
+
+Waypoint turns complex multi-step flows (onboarding, checkout, wizards) into a portable JSON schema you can build visually, validate strictly, and render anywhere.
+
+## How it works
+
+1. **Define a schema** — steps, fields, validation rules, and visibility conditions in a single `WaypointSchema` JSON object
+2. **Render with WaypointRunner** — the provider initialises a Zustand store, handles persistence and deep-link resume
+3. **Use hooks in each step** — `useWaypointStep()` gives you a react-hook-form instance pre-wired to the step's Zod schema
+
+The schema is self-contained. Export it, commit it, pass it as a prop — Waypoint is stateless until you mount a runner.
+
+## Packages
+
+| Package | Description |
+|---|---|
+| `@waypoint/core` | Schema types · condition engine · tree resolver · Zustand runtime store · Zod generator |
+| `@waypoint/react` | Headless hooks (`useWaypoint`, `useWaypointStep`) — router-agnostic |
+| `@waypoint/next` | Next.js App Router integration (`WaypointRunner`, `useWaypointStep` with RHF + Zod) |
+| `@waypoint/builder` | Embeddable no-code UI for building and testing schemas |
+
+## Quick install
+
+```bash
+# Next.js App Router
+pnpm add @waypoint/next @waypoint/core
+
+# Plain React (any router)
+pnpm add @waypoint/react @waypoint/core
+```
+
+## Minimal example
+
+```tsx
+// 1. Define a schema (or generate one with <WaypointBuilder>)
+const schema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  steps: [
+    {
+      id: "personal",
+      title: "Personal info",
+      url: "/onboarding/personal",
+      fields: [
+        { id: "name",  type: "text",  label: "Full name",  validation: [{ type: "required", message: "Required" }] },
+        { id: "email", type: "email", label: "Email address", validation: [{ type: "required", message: "Required" }, { type: "email", message: "Invalid email" }] },
+      ],
+    },
+    {
+      id: "confirm",
+      title: "Confirm",
+      url: "/onboarding/confirm",
+      fields: [],
+    },
+  ],
+};
+
+// 2. Wrap your pages with WaypointRunner
+// app/onboarding/layout.tsx
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return (
+    <WaypointRunner schema={schema} onComplete={(data) => console.log(data)}>
+      {children}
+    </WaypointRunner>
+  );
+}
+
+// 3. In each step page
+// app/onboarding/personal/page.tsx
+export default function PersonalPage() {
+  const { fields, form, handleSubmit, progress, isFirstStep } = useWaypointStep();
+  return (
+    <form onSubmit={handleSubmit}>
+      <progress value={progress} max={100} />
+      {fields.map((f) => (
+        <input key={f.definition.id} {...form.register(f.definition.id)} />
+      ))}
+      <button type="submit">Continue →</button>
+    </form>
+  );
+}
+```
+
+[Get started →](/getting-started)
+
+---
+
+# Getting Started
+
+## Installation
+
+
+
+`zustand` is a peer dependency of `@waypoint/core`. It is installed automatically by most package managers.
+
+---
+
+## Step 1 — Define your schema
+
+A `WaypointSchema` describes every step, field, validation rule and visibility condition in your journey.
+
+```ts
+// lib/onboarding.schema.ts
+
+
+export const onboardingSchema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  steps: [
+    {
+      id: "personal",
+      title: "Personal info",
+      url: "/onboarding/personal",
+      fields: [
+        {
+          id: "name",
+          type: "text",
+          label: "Full name",
+          validation: [{ type: "required", message: "Name is required" }],
+        },
+        {
+          id: "email",
+          type: "email",
+          label: "Email address",
+          validation: [
+            { type: "required", message: "Email is required" },
+            { type: "email",    message: "Must be a valid email" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "company",
+      title: "Company",
+      url: "/onboarding/company",
+      // This step only appears when the user selects "professional"
+      visibleWhen: {
+        combinator: "and",
+        rules: [{ field: "personal.accountType", operator: "equals", value: "professional" }],
+      },
+      fields: [
+        { id: "companyName", type: "text", label: "Company name",
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "confirm",
+      title: "Review & confirm",
+      url: "/onboarding/confirm",
+      fields: [],
+    },
+  ],
+};
+```
+
+You can build schemas visually with `<WaypointBuilder>` instead of writing JSON by hand. See the [Builder guide](/guides/builder).
+
+---
+
+## Step 2 — Add WaypointRunner to your layout
+
+`WaypointRunner` is a React provider that creates an isolated Zustand store for your journey and handles init, persistence and callbacks.
+
+```tsx
+// app/onboarding/layout.tsx
+"use client";
+
+
+
+
+export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  async function handleComplete(data: Record<string, Record<string, unknown>>) {
+    await fetch("/api/onboarding", { method: "POST", body: JSON.stringify(data) });
+    router.push("/dashboard");
+  }
+
+  return (
+    <WaypointRunner schema={onboardingSchema} onComplete={handleComplete}>
+      {children}
+    </WaypointRunner>
+  );
+}
+```
+
+---
+
+## Step 3 — Use `useWaypointStep` in each page
+
+`useWaypointStep()` auto-detects the current step from the URL, returns the visible fields, and provides a react-hook-form instance pre-wired to the step's Zod validation schema.
+
+```tsx
+// app/onboarding/personal/page.tsx
+"use client";
+
+
+
+export default function PersonalPage() {
+  const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
+    useWaypointStep();
+
+  return (
+    
+      {/* Progress bar */}
+      
+
+      <form onSubmit={form.handleSubmit(handleSubmit)}>
+        {fields.map((field) => (
+          
+            <label>{field.definition.label}</label>
+            <input
+              type={field.definition.type}
+              placeholder={field.definition.placeholder}
+              {...form.register(field.definition.id)}
+            />
+            {form.formState.errors[field.definition.id] && (
+              <span>{String(form.formState.errors[field.definition.id]?.message)}</span>
+            )}
+          
+        ))}
+
+        {!isFirstStep && (
+          <button type="button" onClick={goBack}>← Back</button>
+        )}
+        <button type="submit">
+          {isLastStep ? "Finish ✓" : "Continue →"}
+        </button>
+      </form>
+    
+  );
+}
+```
+
+The same component works for **every step** — fields are resolved dynamically from the schema. You only need one page component per step if your fields are similar enough.
+
+---
+
+## Step 4 — Set up routes
+
+Each step's `url` in your schema must match a Next.js route. For the schema above:
+
+```
+app/onboarding/
+├── layout.tsx          ← WaypointRunner lives here
+├── personal/
+│   └── page.tsx        ← step id: "personal"
+├── company/
+│   └── page.tsx        ← step id: "company" (conditional)
+└── confirm/
+    └── page.tsx        ← step id: "confirm"
+```
+
+`useWaypointStep()` matches the current `pathname` to the step `url`, so each page automatically knows which step it is.
+
+---
+
+## What's next?
+
+- [WaypointSchema reference](/concepts/journey-tree) — full schema type documentation
+- [Conditions](/concepts/progress) — configure step/field visibility
+- [Persistence & resume](/concepts/multi-journey) — localStorage + deep-link
+- [API Reference — @waypoint/next](/api/use-waypoint-initializer) — all props & return values
+
+---
+
+# WaypointSchema
+
+The `WaypointSchema` is the single source of truth for a journey. It is a plain JSON object describing every step, field, validation rule, condition and external variable. It is portable — export it, commit it, and pass it as a prop to `WaypointRunner` or `WaypointBuilder`.
+
+## Top-level shape
+
+```ts
+interface WaypointSchema {
+  version: "1";
+  id: string;                           // unique journey identifier
+  name: string;                         // display name
+  steps: StepDefinition[];
+  externalVariables?: ExternalVariable[];
+  customTypes?: CustomTypeDefinition[];
+  persistenceMode?: PersistenceMode;    // "zustand" | "backend-step" | "backend-manual"
+  metadata?: Record<string, unknown>;
+}
+```
+
+## StepDefinition
+
+```ts
+interface StepDefinition {
+  id: string;
+  title: string;
+  url: string;                    // URL for this step — e.g. "/onboarding/personal"
+  fields: FieldDefinition[];
+  visibleWhen?: ConditionGroup;   // hide/show the entire step based on data
+  enableResumeFromHere?: boolean; // mark as a valid deep-link entry point
+}
+```
+
+Steps are ordered. `resolveTree()` evaluates `visibleWhen` on each step against current form data to produce the list of steps actually presented to the user.
+
+## FieldDefinition
+
+```ts
+interface FieldDefinition {
+  id: string;
+  type: FieldType;               // "text" | "email" | "select" | ...
+  label: string;
+  placeholder?: string;
+  defaultValue?: unknown;
+  options?: SelectOption[];      // for select / multiselect / radio
+  validation?: ValidationRule[];
+  visibleWhen?: ConditionGroup;  // field-level visibility
+  dependsOn?: string[];          // dot-paths: "stepId.fieldId" or "$ext.varId"
+}
+```
+
+### Built-in field types
+
+| Type | Input |
+|---|---|
+| `text` `email` `password` `tel` `url` `number` `date` | `<input type="…">` |
+| `textarea` | `<textarea>` |
+| `select` | `<select>` |
+| `multiselect` | `<select multiple>` |
+| `radio` | `<input type="radio">` group |
+| `checkbox` | `<input type="checkbox">` |
+| `file` | `<input type="file">` |
+
+Custom types can be added to the schema via `customTypes` and registered in the builder.
+
+## ValidationRule
+
+```ts
+interface ValidationRule {
+  type: "required" | "min" | "max" | "minLength" | "maxLength"
+      | "email" | "url" | "regex" | "custom";
+  value?: string | number;    // for min/max/minLength/maxLength/regex
+  message: string;            // error text shown to the user
+  customValidatorId?: string; // for "custom" — id registered at runtime
+}
+```
+
+`buildZodSchema(fields)` from `@waypoint/core` converts these rules into a Zod object schema automatically. `useWaypointStep()` in `@waypoint/next` uses this schema to drive react-hook-form validation.
+
+## ExternalVariable
+
+Variables whose values come from outside the journey (session data, API response, URL params) that conditions can reference as `$ext.varId`.
+
+```ts
+interface ExternalVariable {
+  id: string;
+  label: string;
+  type: "string" | "number" | "boolean" | "object";
+  blocking: boolean;        // if true and value is missing, runner blocks rendering
+  usedIn?: Array<{ stepId: string; fieldId?: string }>;
+}
+```
+
+Pass values via `WaypointRunner`'s `externalVars` prop.
+
+## PersistenceMode
+
+| Value | Behaviour |
+|---|---|
+| `"zustand"` | Zustand persist middleware writes to `localStorage`. State resumes on reload. |
+| `"backend-step"` | `onStepComplete` is called after every step — persist server-side per step. |
+| `"backend-manual"` | You control when to persist via `onDataChange`. |
+
+## Example — conditional step
+
+```ts
+const schema: WaypointSchema = {
+  version: "1",
+  id: "insurance",
+  name: "Insurance Quote",
+  steps: [
+    {
+      id: "basics",
+      title: "Basic info",
+      url: "/quote/basics",
+      fields: [
+        { id: "age", type: "number", label: "Your age",
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "senior",
+      title: "Senior options",
+      url: "/quote/senior",
+      // Only shown when age >= 65
+      visibleWhen: {
+        combinator: "and",
+        rules: [{ field: "basics.age", operator: "greaterThanOrEqual", value: 65 }],
+      },
+      fields: [
+        { id: "healthPlan", type: "select", label: "Health plan",
+          options: [{ label: "Basic", value: "basic" }, { label: "Extended", value: "extended" }] },
+      ],
+    },
+    {
+      id: "summary",
+      title: "Summary",
+      url: "/quote/summary",
+      fields: [],
+    },
+  ],
+};
+```
+
+See [Conditions](/concepts/progress) for the full list of operators and how to compose groups.
+
+---
+
+# Tree Resolution
+
+The **resolved tree** is the computed list of steps and fields that are actually visible to the user at a given moment, after evaluating all conditions against the current form data and external variables.
+
+## resolveTree()
+
+```ts
+
+
+const tree: ResolvedTree = resolveTree(schema, data, externalVars);
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `schema` | `WaypointSchema` | The journey definition |
+| `data` | `Record<string, Record<string, unknown>>` | Form data: `{ stepId: { fieldId: value } }` |
+| `externalVars` | `Record<string, unknown>` | External variable values |
+
+### ResolvedTree
+
+```ts
+interface ResolvedTree {
+  steps: ResolvedStep[];          // visible steps, in order
+  hiddenSteps: ResolvedStep[];    // steps whose visibleWhen evaluated to false
+  missingExternalVars: string[];  // blocking external variables that have no value
+}
+
+interface ResolvedStep {
+  definition: StepDefinition;
+  visible: boolean;
+  fields: ResolvedField[];        // all fields, including hidden ones
+}
+
+interface ResolvedField {
+  definition: FieldDefinition;
+  visible: boolean;               // after evaluating field-level visibleWhen
+  dependenciesMet: boolean;       // all dependsOn paths have a value
+}
+```
+
+`resolveTree()` is a **pure function** — it has no side effects and takes no React context. You can call it anywhere: in hooks, server components, tests, or plain scripts.
+
+## Navigation helpers
+
+After resolving the tree you can navigate it with these helpers:
+
+```ts
+
+
+// Next step after currentStepId (undefined if on last step)
+const next = getNextStep(tree.steps, currentStepId);
+
+// Previous step before currentStepId (undefined if on first step)
+const prev = getPreviousStep(tree.steps, currentStepId);
+
+// 0–100 progress based on position in the visible tree
+const pct = calculateProgress(tree.steps, currentStepId);
+
+// Deepest step the user can navigate to given their data
+const lastValid = findLastValidStep(tree.steps, data, externalVars);
+```
+
+## When the tree changes
+
+Conditions are re-evaluated every time data changes. If a user's answer makes a previously hidden step visible — or hides a step they already visited — the tree updates immediately.
+
+`useWaypointStep()` in `@waypoint/next` handles this automatically:
+1. After the user submits a step, the tree is re-resolved with the new data
+2. If the set of visible step IDs changed, `truncateHistoryAt(stepId)` prunes stale forward history
+3. Navigation then proceeds to the first step of the new tree
+
+## Runtime store integration
+
+The runtime store (`createRuntimeStore`) calls `resolveTree` internally via the computed helpers:
+
+```ts
+
+
+const store = createRuntimeStore();
+store.getState().init(schema);
+
+// Computed (not stored) — always derives from current state
+const tree    = getResolvedTree(store.getState());
+const current = getCurrentStep(store.getState());
+```
+
+These helpers are thin wrappers around `resolveTree()` that read `schema`, `data`, and `externalVars` directly from state.
+
+## Example — tree with hidden step
+
+```ts
+const schema = { /* insurance schema with "senior" step */ };
+
+// User is 30 — "senior" step is hidden
+const tree1 = resolveTree(schema, { basics: { age: 30 } }, {});
+// tree1.steps = [ "basics", "summary" ]
+// tree1.hiddenSteps = [ "senior" ]
+
+// User changed to 70 — "senior" step appears
+const tree2 = resolveTree(schema, { basics: { age: 70 } }, {});
+// tree2.steps = [ "basics", "senior", "summary" ]
+// tree2.hiddenSteps = []
+```
+
+---
+
+# Conditions
+
+Conditions control the visibility of steps and fields. They are evaluated by `resolveTree()` every time the journey data changes. A step or field with no `visibleWhen` is always visible.
+
+## ConditionGroup
+
+```ts
+interface ConditionGroup {
+  combinator: "and" | "or";
+  rules: ConditionRule[];
+  groups?: ConditionGroup[];  // nested sub-groups
+}
+
+interface ConditionRule {
+  field: string;            // dot-path: "stepId.fieldId" or "$ext.varId"
+  operator: ConditionOperator;
+  value?: unknown;
+}
+```
+
+Groups can be nested arbitrarily deep. Mixed AND/OR logic is achieved by nesting groups.
+
+## Operators
+
+| Operator | Description | `value` needed |
+|---|---|---|
+| `equals` | Strict equality | Yes |
+| `notEquals` | Strict inequality | Yes |
+| `greaterThan` | `field > value` | Yes |
+| `greaterThanOrEqual` | `field >= value` | Yes |
+| `lessThan` | `field < value` | Yes |
+| `lessThanOrEqual` | `field <= value` | Yes |
+| `contains` | String includes / array includes | Yes |
+| `notContains` | Negation of `contains` | Yes |
+| `in` | Field value is in array | Yes (array) |
+| `notIn` | Field value is not in array | Yes (array) |
+| `exists` | Field has a non-empty value | No |
+| `notExists` | Field has no value or is empty | No |
+| `matches` | Field matches a regex | Yes (regex string) |
+
+## Field paths
+
+Rules reference data with dot-paths:
+
+| Path format | Resolves to |
+|---|---|
+| `"stepId.fieldId"` | Value of `fieldId` in step `stepId` |
+| `"$ext.varId"` | External variable with id `varId` |
+
+## Examples
+
+### Simple required field
+
+```ts
+// Show "companyName" field only when account type is "professional"
+{
+  id: "companyName",
+  type: "text",
+  label: "Company name",
+  visibleWhen: {
+    combinator: "and",
+    rules: [{ field: "personal.accountType", operator: "equals", value: "professional" }],
+  },
+}
+```
+
+### OR condition
+
+```ts
+// Show this step when the user is either a freelancer OR an agency
+{
+  id: "billing",
+  title: "Billing info",
+  url: "/billing",
+  visibleWhen: {
+    combinator: "or",
+    rules: [
+      { field: "personal.role", operator: "equals", value: "freelancer" },
+      { field: "personal.role", operator: "equals", value: "agency" },
+    ],
+  },
+}
+```
+
+### Nested AND/OR
+
+```ts
+// (age >= 65) AND (country === "FR" OR country === "BE")
+{
+  combinator: "and",
+  rules: [{ field: "basics.age", operator: "greaterThanOrEqual", value: 65 }],
+  groups: [
+    {
+      combinator: "or",
+      rules: [
+        { field: "basics.country", operator: "equals", value: "FR" },
+        { field: "basics.country", operator: "equals", value: "BE" },
+      ],
+    },
+  ],
+}
+```
+
+### External variable
+
+```ts
+// Show premium features only if the user has an active subscription
+// (value comes from your API, passed as externalVars to WaypointRunner)
+{
+  combinator: "and",
+  rules: [{ field: "$ext.subscriptionActive", operator: "equals", value: true }],
+}
+```
+
+## Low-level API
+
+```ts
+
+
+// Evaluate a group
+const result: boolean = evaluateConditionGroup(group, data, externalVars);
+
+// Shorthand — undefined group always returns true
+const visible: boolean = isVisible(group, data, externalVars);
+
+// Resolve a dot-path to its current value
+const value: unknown = resolveFieldValue("personal.email", data, externalVars);
+```
+
+---
+
+# Persistence
+
+Waypoint supports three persistence strategies. The strategy is declared in your schema's `persistenceMode` field and activated by `WaypointRunner`.
+
+## Modes
+
+### `"zustand"` — localStorage (default for SPAs)
+
+When `persistenceMode: "zustand"`, `WaypointRunner` activates the Zustand persist middleware. Journey data is automatically saved to `localStorage` under the key `waypoint-runtime-{schemaId}`.
+
+On the next visit, `WaypointRunner`:
+1. Detects the saved state via `hasPersistedState(store, schemaId)`
+2. Calls `resume(schema, externalVars)` instead of `init()` — preserving `data`, `currentStepId` and `history`
+3. Navigates the user to `findLastValidStep()` — their furthest accessible step given current data
+
+```ts
+// schema.ts
+export const schema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  persistenceMode: "zustand",  // ← enable localStorage persistence
+  steps: [ /* ... */ ],
+};
+```
+
+Only `{ schemaId, data, currentStepId, history, completed }` are persisted — not the full schema or callbacks. The schema is always re-provided by your app at mount time.
+
+### `"backend-step"` — Server-side, per step
+
+Call your backend after each step completes. Wire up the `onStepComplete` callback on `WaypointRunner`:
+
+```tsx
+<WaypointRunner
+  schema={schema}
+  onStepComplete={async (stepId, stepData) => {
+    await api.saveStep(schema.id, stepId, stepData);
+  }}
+  onComplete={async (allData) => {
+    await api.completeJourney(schema.id, allData);
+    router.push("/success");
+  }}
+>
+  {children}
+</WaypointRunner>
+```
+
+### `"backend-manual"` — Server-side, on demand
+
+Use `onDataChange` to receive every data mutation and decide yourself when to persist:
+
+```tsx
+<WaypointRunner
+  schema={schema}
+  onDataChange={(data) => {
+    debouncedSave(data);
+  }}
+>
+  {children}
+</WaypointRunner>
+```
+
+## Resume via `fetchData`
+
+For backend-persisted journeys, pass `fetchData` to `WaypointRunner` to reload saved data on mount:
+
+```tsx
+<WaypointRunner
+  schema={schema}
+  fetchData={async () => {
+    const saved = await api.loadJourney(schema.id);
+    return saved.data; // Record<stepId, Record<fieldId, value>>
+  }}
+  onComplete={handleComplete}
+>
+  {children}
+</WaypointRunner>
+```
+
+`fetchData` is called once during init. If it returns data, `WaypointRunner` calls `init(schema, { data: fetchedData })` and navigates to `findLastValidStep()`.
+
+## Init vs. Resume
+
+| Situation | Action |
+|---|---|
+| No persisted state (first visit) | `init(schema)` — navigate to first step |
+| Persisted state found (`"zustand"` mode) | `resume(schema)` — keep data, navigate to last valid step |
+| `fetchData` returns data | `init(schema, { data })` — navigate to last valid step |
+| External vars changed after mount | `store.setExternalVar(varId, value)` — tree re-resolves automatically |
+
+## Resetting
+
+To restart a journey and clear persisted state:
+
+```ts
+// Reset store and navigate back to step 1
+store.getState().init(schema);
+
+// Or from a hook
+const { reset } = useWaypoint(store);
+reset();
+```
+
+For `"zustand"` mode this clears both the in-memory store and the localStorage entry.
+
+## Multiple concurrent journeys
+
+Each `<WaypointRunner>` creates its **own isolated store** via `useRef`. You can mount multiple runners simultaneously with no shared state:
+
+```tsx
+// Two independent journeys on the same page
+<WaypointRunner schema={checkoutSchema}>
+  
+</WaypointRunner>
+
+<WaypointRunner schema={profileSchema}>
+  
+</WaypointRunner>
+```
+
+Each runner persists under its own key (`waypoint-runtime-checkout` / `waypoint-runtime-profile`).
+
+---
+
+# @waypoint/core
+
+Framework-agnostic engine. Zero React dependency. All other packages build on top of this one.
+
+```bash
+pnpm add @waypoint/core
+```
+
+---
+
+## createRuntimeStore()
+
+Creates an isolated Zustand vanilla store for a single journey.
+
+```ts
+
+
+const store = createRuntimeStore();
+// or with localStorage persistence:
+const store = createRuntimeStore({ persistenceMode: "zustand", schemaId: "onboarding" });
+```
+
+### Options
+
+| Prop | Type | Description |
+|---|---|---|
+| `persistenceMode` | `string` | `"zustand"` activates localStorage persist middleware |
+| `schemaId` | `string` | Used as part of the localStorage key: `waypoint-runtime-{schemaId}` |
+
+### Store state
+
+```ts
+interface WaypointRuntimeState {
+  schema: WaypointSchema | null;
+  data: Record<string, Record<string, unknown>>; // { stepId: { fieldId: value } }
+  externalVars: Record<string, unknown>;
+  currentStepId: string | null;
+  history: string[];      // step IDs visited in order
+  isSubmitting: boolean;
+  completed: boolean;
+}
+```
+
+### Store actions
+
+| Action | Signature | Description |
+|---|---|---|
+| `init` | `(schema, options?) => void` | Fresh start — resets all navigation state |
+| `resume` | `(schema, externalVars?) => void` | Update schema/vars, keep data and navigation |
+| `setFieldValue` | `(stepId, fieldId, value) => void` | Set a single field |
+| `setStepData` | `(stepId, data) => void` | Replace all data for a step |
+| `setExternalVar` | `(varId, value) => void` | Set an external variable |
+| `setCurrentStep` | `(stepId) => void` | Navigate to a step |
+| `truncateHistoryAt` | `(stepId) => void` | Remove all history after stepId |
+| `reset` | `() => void` | Clear all state |
+
+---
+
+## resolveTree()
+
+Pure function — evaluates all conditions and returns the visible tree.
+
+```ts
+
+
+const tree = resolveTree(schema, data, externalVars);
+// { steps: ResolvedStep[], hiddenSteps: ResolvedStep[], missingExternalVars: string[] }
+```
+
+See [Tree Resolution](/concepts/history) for full documentation.
+
+---
+
+## Navigation helpers
+
+```ts
+
+
+getNextStep(steps, currentStepId)      // ResolvedStep | undefined
+getPreviousStep(steps, currentStepId)  // ResolvedStep | undefined
+calculateProgress(steps, currentStepId) // number (0–100)
+findLastValidStep(steps, data, externalVars) // ResolvedStep | undefined
+```
+
+---
+
+## buildZodSchema()
+
+Generates a Zod validation schema from an array of resolved fields.
+
+```ts
+
+
+const zodSchema = buildZodSchema(fields); // z.ZodObject
+const result = zodSchema.safeParse(formValues);
+```
+
+Supported validation rules: `required`, `min`, `max`, `minLength`, `maxLength`, `email`, `url`, `regex`, `custom`.
+
+```ts
+// Register a custom validator before using it
+
+
+registerCustomValidator("strongPassword", (value) => {
+  return typeof value === "string" && value.length >= 8 && /\d/.test(value);
+});
+```
+
+---
+
+## Condition functions
+
+```ts
+
+
+// Evaluate a ConditionGroup
+evaluateConditionGroup(group, data, externalVars) // boolean
+
+// Shorthand — undefined returns true
+isVisible(group, data, externalVars)              // boolean
+
+// Resolve a dot-path to its value
+resolveFieldValue("stepId.fieldId", data, externalVars) // unknown
+```
+
+---
+
+## validateSchema()
+
+```ts
+
+
+const result = validateSchema(parsed);
+// { valid: boolean, errors?: string[] }
+
+assertSchema(parsed); // throws if invalid
+```
+
+---
+
+## Computed state helpers
+
+These are thin wrappers around `resolveTree()` that read directly from a store state object:
+
+```ts
+
+  getResolvedTree,
+  getCurrentStep,
+  getNextStepFromState,
+  getPreviousStepFromState,
+  calculateProgressFromState,
+  getMissingBlockingVars,
+} from "@waypoint/core";
+
+const state = store.getState();
+getResolvedTree(state)             // ResolvedTree
+getCurrentStep(state)              // ResolvedStep | undefined
+getNextStepFromState(state)        // ResolvedStep | undefined
+getPreviousStepFromState(state)    // ResolvedStep | undefined
+calculateProgressFromState(state)  // number (0–100)
+getMissingBlockingVars(state)      // string[]
+```
+
+---
+
+## hasPersistedState()
+
+```ts
+
+
+// Returns true if localStorage has valid state for this schema
+hasPersistedState(store, schemaId) // boolean
+```
+
+Used internally by `WaypointRunner` to decide whether to call `resume()` or `init()`.
+
+---
+
+# @waypoint/react
+
+Headless React hooks that take a `StoreApi` instance and work with any router.
+
+```bash
+pnpm add @waypoint/react @waypoint/core
+```
+
+If you are using Next.js App Router, prefer `@waypoint/next` which provides `WaypointRunner` and a `useWaypointStep()` that auto-wires react-hook-form, Zod validation and navigation.
+
+---
+
+## useWaypoint()
+
+Access full journey state and actions.
+
+```ts
+
+
+
+const state = useWaypoint(store);
+```
+
+### Parameter
+
+| Parameter | Type | Description |
+|---|---|---|
+| `store` | `StoreApi<WaypointRuntimeStore>` | Store instance from `createRuntimeStore()` |
+
+### Return value
+
+```ts
+interface WaypointState {
+  schema: WaypointSchema | null;
+  data: Record<string, Record<string, unknown>>;
+  externalVars: Record<string, unknown>;
+  currentStepId: string | null;
+  currentStep: ResolvedStep | undefined;
+  nextStep: ResolvedStep | undefined;
+  previousStep: ResolvedStep | undefined;
+  tree: ResolvedTree;
+  progress: number;             // 0–100
+  isFirstStep: boolean;
+  isLastStep: boolean;
+  isSubmitting: boolean;
+  missingExternalVars: string[];
+
+  // Actions (delegates to store.getState())
+  setFieldValue(stepId: string, fieldId: string, value: unknown): void;
+  setStepData(stepId: string, data: Record<string, unknown>): void;
+  setExternalVar(varId: string, value: unknown): void;
+  setCurrentStep(stepId: string): void;
+  reset(): void;
+}
+```
+
+### Example
+
+```tsx
+
+
+
+
+function MyJourneyShell({ schema, children }) {
+  const storeRef = useRef(createRuntimeStore());
+
+  useEffect(() => {
+    storeRef.current.getState().init(schema);
+  }, [schema]);
+
+  const { currentStep, progress, setCurrentStep } = useWaypoint(storeRef.current);
+
+  return (
+    
+      
+      <h1>{currentStep?.definition.title}</h1>
+      {children}
+    
+  );
+}
+```
+
+---
+
+## useWaypointStep()
+
+Access the fields and data for a specific step.
+
+```ts
+
+
+const step = useWaypointStep(store, stepId);
+```
+
+### Parameters
+
+| Parameter | Type | Description |
+|---|---|---|
+| `store` | `StoreApi<WaypointRuntimeStore>` | Store instance |
+| `stepId` | `string` | ID of the step to resolve |
+
+### Return value
+
+```ts
+interface WaypointHeadlessStep {
+  step: ResolvedStep | undefined;
+  fields: ResolvedField[];          // visible fields only
+  stepData: Record<string, unknown>; // current data for this step
+  setFieldValue(fieldId: string, value: unknown): void;
+  setStepData(data: Record<string, unknown>): void;
+}
+```
+
+### Example
+
+```tsx
+function PersonalStep({ store }) {
+  const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
+
+  return (
+    <form>
+      {fields.map((field) => (
+        <input
+          key={field.definition.id}
+          value={(stepData[field.definition.id] as string) ?? ""}
+          onChange={(e) => setFieldValue(field.definition.id, e.target.value)}
+          placeholder={field.definition.placeholder}
+        />
+      ))}
+    </form>
+  );
+}
+```
+
+---
+
+## Usage pattern — headless with custom router
+
+When you need to integrate with a router other than Next.js, build on top of `useWaypoint` and `useWaypointStep`:
+
+```tsx
+
+
+
+
+function WaypointProvider({ schema, children }) {
+  const navigate = useNavigate();
+  const storeRef = useRef(createRuntimeStore());
+
+  useEffect(() => {
+    storeRef.current.getState().init(schema);
+  }, [schema]);
+
+  const { tree, currentStepId } = useWaypoint(storeRef.current);
+
+  function goNext() {
+    const next = getNextStep(tree.steps, currentStepId ?? "");
+    if (next) {
+      storeRef.current.getState().setCurrentStep(next.definition.id);
+      navigate(next.definition.url);
+    }
+  }
+
+  return (
+    <StoreContext.Provider value={{ store: storeRef.current, goNext }}>
+      {children}
+    </StoreContext.Provider>
+  );
+}
+```
+
+---
+
+# @waypoint/next
+
+Next.js App Router integration. Provides `WaypointRunner` (context provider) and `useWaypointStep` (per-page hook with react-hook-form + Zod).
+
+```bash
+pnpm add @waypoint/next @waypoint/core
+```
+
+---
+
+## \<WaypointRunner\>
+
+A React provider that initialises an isolated Zustand store, handles persistence, deep-link resume and exposes callbacks for data lifecycle events.
+
+```tsx
+
+
+<WaypointRunner
+  schema={schema}
+  externalVars={{ userId: "42" }}
+  onComplete={async (data) => { /* save data, redirect */ }}
+  onStepComplete={async (stepId, stepData) => { /* per-step save */ }}
+  onDataChange={(data) => { /* any field changed */ }}
+>
+  {children}
+</WaypointRunner>
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `schema` | `WaypointSchema` | ✓ | The journey definition |
+| `externalVars` | `Record<string, unknown>` | | External variable values referenced by conditions |
+| `defaultValues` | `Record<string, Record<string, unknown>>` | | Pre-populated form data |
+| `fetchData` | `() => Promise<Record<string, Record<string, unknown>>>` | | Async loader for saved data — called once on mount |
+| `onComplete` | `(data) => void \| Promise<void>` | | Called when the last step is submitted |
+| `onStepComplete` | `(stepId, stepData) => void \| Promise<void>` | | Called after each step is validated and submitted |
+| `onDataChange` | `(data) => void` | | Called on every field value change |
+| `children` | `React.ReactNode` | ✓ | Step pages |
+
+### Init / Resume logic
+
+On mount, `WaypointRunner`:
+
+1. Creates a store via `createRuntimeStore({ persistenceMode, schemaId })`
+2. If `persistenceMode === "zustand"` and `hasPersistedState(store, schemaId)` → calls `resume(schema, externalVars)`
+3. Otherwise → calls `init(schema, { data: defaultValues || fetchData() })`
+4. After init, if data is present → navigates to `findLastValidStep()` (deep-link resume)
+
+When `externalVars` prop changes after mount, the runner calls `store.setExternalVar()` for each changed key — the tree re-resolves automatically.
+
+`WaypointRunner` must be a **Client Component** (`"use client"`). Place it in a layout file, not a page.
+
+---
+
+## useWaypointStep()
+
+Per-page hook that auto-detects the current step from the URL, provides a react-hook-form instance pre-configured with the step's Zod schema, and handles validation + navigation on submit.
+
+```tsx
+
+
+const {
+  currentStep,
+  fields,
+  form,
+  handleSubmit,
+  goBack,
+  progress,
+  isFirstStep,
+  isLastStep,
+  isSubmitting,
+  errors,
+} = useWaypointStep();
+```
+
+Must be called inside a component that is a descendant of `<WaypointRunner>`.
+
+### Return value
+
+| Property | Type | Description |
+|---|---|---|
+| `currentStep` | `ResolvedStep \| undefined` | The step matched to the current URL |
+| `fields` | `ResolvedField[]` | Visible fields for this step |
+| `form` | `UseFormReturn` | react-hook-form instance — pre-wired to Zod schema |
+| `handleSubmit` | `() => Promise<void>` | Validate → persist → navigate |
+| `goBack` | `() => void` | Navigate to previous step |
+| `progress` | `number` | 0–100 based on position in visible tree |
+| `isFirstStep` | `boolean` | No previous step in resolved tree |
+| `isLastStep` | `boolean` | No next step in resolved tree |
+| `isSubmitting` | `boolean` | True while handleSubmit is running |
+| `errors` | `FieldErrors` | react-hook-form validation errors |
+
+### handleSubmit flow
+
+1. Validate form via react-hook-form + Zod (built from `buildZodSchema(fields)`)
+2. Persist step data into the store: `store.setStepData(stepId, values)`
+3. Re-resolve tree with new data
+4. If visible step IDs changed → `truncateHistoryAt(stepId)` (prevents stale forward history)
+5. Call `onDataChange` callback
+6. Call `onStepComplete` callback (awaited)
+7. If more steps → navigate to `next.definition.url` via `router.push()`
+8. If last step → call `onComplete(allData)`
+
+### Example — full step page
+
+```tsx
+// app/onboarding/personal/page.tsx
+"use client";
+
+
+
+export default function PersonalPage() {
+  const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
+    useWaypointStep();
+
+  return (
+    
+      {/* Progress */}
+      
+        
+      
+
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4">
+        {fields.map((field) => (
+          
+            <label className="block text-sm font-medium mb-1">
+              {field.definition.label}
+            </label>
+            <input
+              type={field.definition.type}
+              className="w-full border rounded px-3 py-2"
+              placeholder={field.definition.placeholder}
+              {...form.register(field.definition.id)}
+            />
+            {form.formState.errors[field.definition.id] && (
+              <p className="text-red-500 text-xs mt-1">
+                {String(form.formState.errors[field.definition.id]?.message)}
+              </p>
+            )}
+          
+        ))}
+
+        
+          {!isFirstStep && (
+            <button type="button" onClick={goBack} className="px-4 py-2 border rounded">
+              ← Back
+            </button>
+          )}
+          <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded">
+            {isLastStep ? "Finish ✓" : "Continue →"}
+          </button>
+        
+      </form>
+    
+  );
+}
+```
+
+---
+
+## useWaypointRuntimeContext()
+
+Access the raw `WaypointRunner` context from any descendant component.
+
+```ts
+
+
+const { schema, store, onComplete, onStepComplete, onDataChange } =
+  useWaypointRuntimeContext();
+```
+
+Returns `WaypointRuntimeContextValue`:
+
+```ts
+interface WaypointRuntimeContextValue {
+  schema: WaypointSchema;
+  store: StoreApi<WaypointRuntimeStore>;
+  onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
+  onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
+  onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+}
+```
+
+Useful when you need direct store access alongside `useWaypoint()` from `@waypoint/react`.
+
+---
+
+# @waypoint/builder
+
+An embeddable no-code UI for building and testing `WaypointSchema` objects. Drop it into any React or Next.js app.
+
+```bash
+pnpm add @waypoint/builder @waypoint/core
+```
+
+---
+
+## \<WaypointBuilder\>
+
+A self-contained editor component that renders a 3-column layout (step list, field list, step/field editors) and exports a `WaypointSchema`.
+
+```tsx
+
+
+<WaypointBuilder
+  defaultValue={existingSchema}
+  onChange={(schema) => console.log(schema)}
+  onSave={async (schema) => {
+    await fetch("/api/schemas", { method: "POST", body: JSON.stringify(schema) });
+  }}
+/>
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `defaultValue` | `WaypointSchema` | | Initial schema to load |
+| `onChange` | `(schema: WaypointSchema) => void` | | Called on every change |
+| `onSave` | `(schema: WaypointSchema) => void \| Promise<void>` | | Called when user clicks "Save" |
+| `theme` | `WaypointTheme` | | Custom theme (colors, fonts) |
+| `className` | `string` | | CSS class on the root element |
+| `style` | `React.CSSProperties` | | Inline style on the root element |
+
+### Layout
+
+The builder renders in a **3-column layout**:
+
+| Column | Content |
+|---|---|
+| Left | Step list + External Variables panel |
+| Centre | Field list for the selected step |
+| Right | Step editor (title, URL, conditions) + Field editor |
+
+The builder requires explicit dimensions — set `height: 100%` on a sized parent or use `style={{ height: "100vh" }}` for full-screen.
+
+### Preview mode
+
+Clicking **▶ Tester** in the toolbar switches to a **split view**:
+
+- **Left panel** — resolved step list with status icons: `✓` done · `→` current · `○` upcoming · `–` hidden
+- **Right panel** — live step renderer with field inputs, inline validation, progress bar, and Prev/Next navigation
+
+Click **← Éditer** to return to the builder. The preview uses an isolated in-memory store — no localStorage, no side effects.
+
+### Theme
+
+```ts
+
+
+// Pass a partial theme to override specific tokens
+
+```
+
+Built-in themes: `DEFAULT_THEME`, `DARK_THEME`. All values are mapped to CSS custom properties at the root element.
+
+---
+
+## useBuilderStore
+
+Access the builder's internal Zustand store for programmatic control.
+
+```ts
+
+
+const { schema, loadSchema, isDirty, resetSchema } = useBuilderStore();
+```
+
+### Useful methods
+
+| Method | Description |
+|---|---|
+| `loadSchema(schema)` | Load a schema into the builder |
+| `resetSchema()` | Reset to the empty default schema |
+
+`useBuilderStore` is a singleton — there can only be one builder instance per page. For multiple builders, you'd need to isolate each in its own React root.
+
+---
+
+## Embedding in Next.js
+
+```tsx
+// app/admin/builder/page.tsx
+"use client";
+
+
+
+
+export default function BuilderPage() {
+  const router = useRouter();
+
+  return (
+    
+      <WaypointBuilder
+        onSave={async (schema) => {
+          const res = await fetch("/api/journey-schemas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(schema),
+          });
+          if (res.ok) router.push("/admin/journeys");
+        }}
+      />
+    
+  );
+}
+```
+
+## Loading an existing schema
+
+```tsx
+"use client";
+
+
+
+
+
+export default function EditSchemaPage({ params }: { params: { id: string } }) {
+  const [schema, setSchema] = useState<WaypointSchema | undefined>();
+
+  useEffect(() => {
+    fetch(`/api/journey-schemas/${params.id}`)
+      .then((r) => r.json())
+      .then(setSchema);
+  }, [params.id]);
+
+  if (!schema) return Loading…;
+
+  return (
+    
+      <WaypointBuilder
+        defaultValue={schema}
+        onSave={async (updated) => {
+          await fetch(`/api/journey-schemas/${params.id}`, {
+            method: "PUT",
+            body: JSON.stringify(updated),
+          });
+        }}
+      />
+    
+  );
+}
+```
+
+---
+
+# Next.js Integration
+
+A complete guide to integrating Waypoint in a Next.js App Router project.
+
+## Prerequisites
+
+```bash
+pnpm add @waypoint/next @waypoint/core
+```
+
+## File structure
+
+```
+app/
+├── onboarding/
+│   ├── layout.tsx       ← WaypointRunner lives here
+│   ├── personal/
+│   │   └── page.tsx     ← step "personal"
+│   ├── company/
+│   │   └── page.tsx     ← step "company" (conditional)
+│   └── confirm/
+│       └── page.tsx     ← step "confirm"
+└── dashboard/
+    └── page.tsx
+```
+
+Each step's `url` in your schema must exactly match its Next.js route path.
+
+---
+
+## 1. Define the schema
+
+```ts
+// lib/onboarding.schema.ts
+
+
+export const onboardingSchema: WaypointSchema = {
+  version: "1",
+  id: "onboarding",
+  name: "User Onboarding",
+  persistenceMode: "zustand",   // auto-save to localStorage
+  steps: [
+    {
+      id: "personal",
+      title: "Personal info",
+      url: "/onboarding/personal",
+      fields: [
+        { id: "firstName", type: "text",  label: "First name",
+          validation: [{ type: "required", message: "Required" }] },
+        { id: "email",     type: "email", label: "Email",
+          validation: [{ type: "required", message: "Required" }, { type: "email", message: "Invalid email" }] },
+        { id: "accountType", type: "select", label: "Account type",
+          options: [{ label: "Personal", value: "personal" }, { label: "Professional", value: "professional" }],
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "company",
+      title: "Company details",
+      url: "/onboarding/company",
+      // Only shown when accountType === "professional"
+      visibleWhen: {
+        combinator: "and",
+        rules: [{ field: "personal.accountType", operator: "equals", value: "professional" }],
+      },
+      fields: [
+        { id: "companyName", type: "text", label: "Company name",
+          validation: [{ type: "required", message: "Required" }] },
+      ],
+    },
+    {
+      id: "confirm",
+      title: "Confirm",
+      url: "/onboarding/confirm",
+      fields: [],
+    },
+  ],
+};
+```
+
+---
+
+## 2. Add WaypointRunner to the layout
+
+```tsx
+// app/onboarding/layout.tsx
+"use client";
+
+
+
+
+
+export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+
+  return (
+    <WaypointRunner
+      schema={onboardingSchema}
+      onStepComplete={async (stepId, stepData) => {
+        // Optional: persist to your backend after each step
+        await fetch(`/api/draft-steps/${stepId}`, {
+          method: "POST",
+          body: JSON.stringify(stepData),
+        });
+      }}
+      onComplete={async (data) => {
+        await fetch("/api/complete-onboarding", {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+        router.push("/dashboard");
+      }}
+    >
+      
+        {children}
+      
+    </WaypointRunner>
+  );
+}
+```
+
+---
+
+## 3. Create step pages
+
+All step pages look the same — `useWaypointStep()` resolves fields from the schema automatically.
+
+```tsx
+// app/onboarding/personal/page.tsx  (same pattern for every step)
+"use client";
+
+
+
+export default function PersonalPage() {
+  const { fields, form, handleSubmit, goBack, progress, isFirstStep, isLastStep } =
+    useWaypointStep();
+
+  return (
+    
+      {/* Progress bar */}
+      
+        
+      
+
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-5">
+        {fields.map((field) => (
+          
+            <label className="block text-sm font-medium mb-1">
+              {field.definition.label}
+            </label>
+
+            {field.definition.type === "select" ? (
+              <select
+                className="w-full border rounded-lg px-3 py-2"
+                {...form.register(field.definition.id)}
+              >
+                <option value="">Choose…</option>
+                {field.definition.options?.map((opt) => (
+                  <option key={String(opt.value)} value={String(opt.value)}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={field.definition.type}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder={field.definition.placeholder}
+                {...form.register(field.definition.id)}
+              />
+            )}
+
+            {form.formState.errors[field.definition.id] && (
+              <p className="text-red-500 text-xs mt-1">
+                {String(form.formState.errors[field.definition.id]?.message)}
+              </p>
+            )}
+          
+        ))}
+
+        
+          {!isFirstStep && (
+            <button type="button" onClick={goBack}
+              className="px-4 py-2 border rounded-lg text-sm">
+              ← Back
+            </button>
+          )}
+          <button type="submit"
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium">
+            {isLastStep ? "Finish ✓" : "Continue →"}
+          </button>
+        
+      </form>
+    
+  );
+}
+```
+
+---
+
+## 4. Passing external variables
+
+If conditions reference `$ext.varId`, pass values via the `externalVars` prop on `WaypointRunner`.
+
+```tsx
+"use client";
+
+
+
+
+export default function Layout({ children }) {
+  const { data: session } = useSession();
+
+  return (
+    <WaypointRunner
+      schema={schema}
+      externalVars={{
+        userId: session?.user?.id,
+        plan: session?.user?.plan,
+      }}
+    >
+      {children}
+    </WaypointRunner>
+  );
+}
+```
+
+`WaypointRunner` syncs `externalVars` into the store whenever the prop changes. The tree re-resolves automatically.
+
+---
+
+## Resume on page reload
+
+With `persistenceMode: "zustand"` in your schema, journey data is persisted to `localStorage` automatically. When the user returns:
+
+1. `WaypointRunner` detects the saved state
+2. Calls `resume()` to restore data without re-initialising
+3. Navigates to the last valid step
+
+No additional code needed.
+
+---
+
+# React Integration (Headless)
+
+Use `@waypoint/react` when you need router-agnostic hooks — React Router, TanStack Router, or a custom navigation layer.
+
+## Installation
+
+```bash
+pnpm add @waypoint/react @waypoint/core
+```
+
+## Architecture
+
+Unlike `@waypoint/next`, the headless package ships no provider component. You manage:
+- Creating and storing the store instance
+- Calling `init()` or `resume()` on mount
+- Navigating between steps with your router
+
+## Basic setup
+
+```tsx
+// contexts/journey-context.tsx
+"use client";
+
+
+
+
+
+const JourneyContext = createContext<RuntimeStore | null>(null);
+
+export function JourneyProvider({
+  schema,
+  children,
+}: {
+  schema: WaypointSchema;
+  children: React.ReactNode;
+}) {
+  const storeRef = useRef<RuntimeStore | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createRuntimeStore();
+  }
+
+  useEffect(() => {
+    storeRef.current!.getState().init(schema);
+  }, [schema.id]);
+
+  return (
+    <JourneyContext.Provider value={storeRef.current}>
+      {children}
+    </JourneyContext.Provider>
+  );
+}
+
+export function useJourneyStore() {
+  const store = useContext(JourneyContext);
+  if (!store) throw new Error("useJourneyStore must be used inside <JourneyProvider>");
+  return store;
+}
+```
+
+## Using the hooks
+
+```tsx
+// components/StepShell.tsx
+
+
+
+
+export function StepShell({ stepId, children }) {
+  const store = useJourneyStore();
+  const navigate = useNavigate();
+
+  const {
+    currentStep,
+    nextStep,
+    previousStep,
+    progress,
+    isFirstStep,
+    isLastStep,
+    setCurrentStep,
+  } = useWaypoint(store);
+
+  function goNext() {
+    if (nextStep) {
+      setCurrentStep(nextStep.definition.id);
+      navigate(nextStep.definition.url);
+    }
+  }
+
+  function goBack() {
+    if (previousStep) {
+      setCurrentStep(previousStep.definition.id);
+      navigate(previousStep.definition.url);
+    }
+  }
+
+  return (
+    
+      
+      <h1>{currentStep?.definition.title}</h1>
+      {children}
+      
+        {!isFirstStep && <button onClick={goBack}>← Back</button>}
+        {!isLastStep && <button onClick={goNext}>Continue →</button>}
+      
+    
+  );
+}
+```
+
+## Accessing a specific step's fields
+
+```tsx
+
+
+
+function PersonalFields() {
+  const store = useJourneyStore();
+  const { fields, stepData, setFieldValue } = useWaypointStep(store, "personal");
+
+  return (
+    
+      {fields.map((field) => (
+        <input
+          key={field.definition.id}
+          value={(stepData[field.definition.id] as string) ?? ""}
+          placeholder={field.definition.placeholder}
+          onChange={(e) => setFieldValue(field.definition.id, e.target.value)}
+        />
+      ))}
+    
+  );
+}
+```
+
+## Adding validation
+
+Combine `buildZodSchema` with react-hook-form manually:
+
+```tsx
+
+
+
+
+
+function StepForm({ store, stepId }) {
+  const { fields, stepData, setStepData } = useWaypointStep(store, stepId);
+
+  const form = useForm({
+    resolver: zodResolver(buildZodSchema(fields)),
+    defaultValues: stepData,
+  });
+
+  function handleSubmit(values) {
+    setStepData(values);
+    // then navigate to next step
+  }
+
+  return (
+    <form onSubmit={form.handleSubmit(handleSubmit)}>
+      {fields.map((field) => (
+        <input key={field.definition.id} {...form.register(field.definition.id)} />
+      ))}
+      <button type="submit">Continue</button>
+    </form>
+  );
+}
+```
+
+`@waypoint/next`'s `useWaypointStep()` does all of the above automatically. Use the headless approach only when you need control over validation, routing, or form libraries.
+
+## Persistence (manual)
+
+```tsx
+// Create store with localStorage persistence
+const storeRef = useRef(
+  createRuntimeStore({ persistenceMode: "zustand", schemaId: schema.id })
+);
+
+useEffect(() => {
+  const store = storeRef.current;
+  if (hasPersistedState(store, schema.id)) {
+    store.getState().resume(schema);
+  } else {
+    store.getState().init(schema);
+  }
+}, []);
+```
+
+---
+
+# Builder Guide
+
+`@waypoint/builder` provides a no-code UI for creating and editing `WaypointSchema` objects. It is an embeddable React component — drop it into any admin panel or internal tool.
+
+## Installation
+
+```bash
+pnpm add @waypoint/builder @waypoint/core
+```
+
+## Basic embed
+
+```tsx
+"use client";
+
+
+
+export default function BuilderPage() {
+  return (
+    
+      <WaypointBuilder
+        onSave={(schema) => {
+          console.log("Schema saved:", schema);
+        }}
+        onChange={(schema) => {
+          // Live updates — auto-save drafts, display preview, etc.
+        }}
+      />
+    
+  );
+}
+```
+
+The builder needs an explicit height on its parent container — it fills 100% of the available space.
+
+## Loading an existing schema
+
+Pass a `WaypointSchema` (loaded from your API, a file, or another source) as `defaultValue`:
+
+```tsx
+const [schema, setSchema] = useState<WaypointSchema | undefined>();
+
+useEffect(() => {
+  fetch(`/api/schemas/${id}`).then((r) => r.json()).then(setSchema);
+}, [id]);
+
+if (!schema) return ;
+
+return (
+  
+    <WaypointBuilder
+      defaultValue={schema}
+      onSave={async (updated) => {
+        await fetch(`/api/schemas/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(updated),
+        });
+      }}
+    />
+  
+);
+```
+
+## What you can build in the UI
+
+The builder supports the full `WaypointSchema` feature set:
+
+| Feature | Builder UI |
+|---|---|
+| Steps | Add, rename, reorder, delete |
+| Step URL | Editable text input |
+| Step conditions | Visual condition builder with AND/OR groups |
+| Fields | Add, reorder, configure type, label, placeholder |
+| Field type | Dropdown (all 13 built-in types + custom types) |
+| Field validation | Add rules (required, email, min/max, regex…) |
+| Field conditions | Same visual builder as step conditions |
+| External variables | Declare id, type, blocking flag |
+| Persistence mode | Dropdown (zustand / backend-step / backend-manual) |
+
+## Preview mode (Test)
+
+Click **▶ Tester** in the toolbar to enter preview mode. This opens a split view:
+
+- **Left** — the resolved step list with live status: `✓` visited, `→` current, `○` upcoming, `–` hidden by condition
+- **Right** — a rendered form for the current step with field inputs and validation
+
+This lets you test conditions, validation rules, and step ordering without leaving the builder or writing any code.
+
+Click **← Éditer** to return to the editor at any time.
+
+## Exporting the schema
+
+Click **Export JSON** in the toolbar to download the schema as a `.waypoint.json` file. The file can be imported back into any builder instance.
+
+To export programmatically, read the schema from `onChange` or `onSave`:
+
+```tsx
+<WaypointBuilder
+  onSave={(schema) => {
+    const json = JSON.stringify(schema, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    // trigger download…
+  }}
+/>
+```
+
+## Validating an imported schema
+
+Use `validateSchema` from `@waypoint/core` to verify a schema before passing it to `defaultValue`:
+
+```ts
+
+
+const result = validateSchema(parsed);
+if (!result.valid) {
+  console.error(result.errors);
+} else {
+  setSchema(parsed);
+}
+```
+
+## Theming
+
+```tsx
+
+
+// Use the built-in dark theme
+
+
+// Or override individual tokens
+
+```
+
+All theme tokens are compiled to CSS custom properties on the root element, so you can also target them with CSS:
+
+```css
+.waypoint-builder-root {
+  --wp-primary: #6366f1;
+  --wp-canvas: #fafafa;
+}
+```
+
+## Using the generated schema with WaypointRunner
+
+The schema produced by the builder is a standard `WaypointSchema` — use it directly with `WaypointRunner`:
+
+```tsx
+
+
+// schema loaded from your API (was originally built with WaypointBuilder)
+<WaypointRunner schema={schema} onComplete={handleComplete}>
+  
+</WaypointRunner>
+```
+
+No conversion or transformation needed.
+
+---
+
+# AI & Skills
+
+Use Waypoint documentation with AI agents. Install the Waypoint skill for Claude Code, Cursor, and other AI coding assistants.
+
+---
+
+## LLM-Ready Documentation
+
+Waypoint exposes machine-readable docs compatible with any AI tool that supports the [`llms.txt`](https://llmstxt.org) standard.
+
+| Endpoint | Description |
+|---|---|
+| [`/llms.txt`](/llms.txt) | Lightweight index — titles and descriptions of all pages |
+| [`/llms-full.txt`](/llms-full.txt) | Complete documentation in plain markdown |
+
+Point your AI assistant at either URL, or paste it directly into context.
+
+---
+
+## Install the Waypoint Skill
+
+The Waypoint skill gives your agent deep knowledge of all four packages — schema types, conditions, hooks, builder API, and real-world patterns — loaded on demand without bloating your context window.
+
+
+
+The skill uses **progressive disclosure** — only the name and description are loaded at startup. The full instructions and package references are read only when the agent decides the skill is relevant, keeping context windows efficient.
+
+---
+
+## What's Included
+
+The skill covers all four Waypoint packages with full API references.
+
+
+
+
+**@waypoint/core**
+
+`WaypointSchema` types · `createRuntimeStore()` · `resolveTree()` · `buildZodSchema()` · condition engine · `validateSchema()`
+
+
+
+**@waypoint/react**
+
+`useWaypoint()` · `useWaypointStep()` · headless store integration · router-agnostic patterns
+
+
+
+**@waypoint/next**
+
+`WaypointRunner` props · `useWaypointStep()` with RHF + Zod · `useWaypointRuntimeContext()` · init vs resume logic
+
+
+
+**@waypoint/builder**
+
+`WaypointBuilder` props · `WaypointTheme` tokens · `DEFAULT_THEME` / `DARK_THEME` · `useBuilderStore()` actions
+
+
+
+
+---
+
+## Supported Agents
+
+The skill is distributed via [skills.sh](https://skills.sh) and works with any compatible agent:
+
+**Claude Code** · **Cursor** · **Windsurf** · **OpenCode** · and 40+ others
+
+---
+
+## Verify the Installation
+
+After installing the skill, test it with this prompt:
+
+```
+How do I create a multi-step journey with a conditional step that only appears
+when the user selects "business" as their account type?
+```
+
+A correct response should reference `WaypointSchema` with a `visibleWhen` condition on the step, `WaypointRunner` in a layout file, and `useWaypointStep()` in each page.
+
+---
+
+## Skill Source
+
+The skill lives in the repo at [`.claude/skills/waypoint/`](https://github.com/tmauc/waypoint/tree/master/.claude/skills/waypoint) and is versioned alongside the code. When the API changes, the skill is updated in the same commit.

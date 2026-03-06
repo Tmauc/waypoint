@@ -1,42 +1,132 @@
 ---
-title: Progress
+title: Conditions
 ---
 
-# Progress
+# Conditions
 
-Waypoint automatically calculates and updates a `progress` value (0–100) for each journey.
+Conditions control the visibility of steps and fields. They are evaluated by `resolveTree()` every time the journey data changes. A step or field with no `visibleWhen` is always visible.
 
-## Calculation
-
-Progress is calculated by `calculateStepProgress` from `@waypoint/core`:
+## ConditionGroup
 
 ```ts
-progress = ((stepIndex + 1) / (totalSteps + 1)) * 100
-```
+interface ConditionGroup {
+  combinator: "and" | "or";
+  rules: ConditionRule[];
+  groups?: ConditionGroup[];  // nested sub-groups
+}
 
-The `+1` in the denominator ensures the last step never reaches 100%, leaving room to indicate "completion" only when all steps are done.
-
-## Automatic updates
-
-Progress is updated automatically whenever `currentStep` changes — you don't need to manage it manually.
-
-## Reading progress
-
-```tsx
-import { useWaypointStore } from "@waypoint/core";
-
-function ProgressBar() {
-  const progress = useWaypointStore(
-    (s) => s.getJourney("myJourney")?.progress ?? 0
-  );
-  return <progress value={progress} max={100} />;
+interface ConditionRule {
+  field: string;            // dot-path: "stepId.fieldId" or "$ext.varId"
+  operator: ConditionOperator;
+  value?: unknown;
 }
 ```
 
-## Manual override
+Groups can be nested arbitrarily deep. Mixed AND/OR logic is achieved by nesting groups.
 
-You can manually set progress if needed:
+## Operators
+
+| Operator | Description | `value` needed |
+|---|---|---|
+| `equals` | Strict equality | Yes |
+| `notEquals` | Strict inequality | Yes |
+| `greaterThan` | `field > value` | Yes |
+| `greaterThanOrEqual` | `field >= value` | Yes |
+| `lessThan` | `field < value` | Yes |
+| `lessThanOrEqual` | `field <= value` | Yes |
+| `contains` | String includes / array includes | Yes |
+| `notContains` | Negation of `contains` | Yes |
+| `in` | Field value is in array | Yes (array) |
+| `notIn` | Field value is not in array | Yes (array) |
+| `exists` | Field has a non-empty value | No |
+| `notExists` | Field has no value or is empty | No |
+| `matches` | Field matches a regex | Yes (regex string) |
+
+## Field paths
+
+Rules reference data with dot-paths:
+
+| Path format | Resolves to |
+|---|---|
+| `"stepId.fieldId"` | Value of `fieldId` in step `stepId` |
+| `"$ext.varId"` | External variable with id `varId` |
+
+## Examples
+
+### Simple required field
 
 ```ts
-useWaypointStore.getState().setProgress("myJourney", 75);
+// Show "companyName" field only when account type is "professional"
+{
+  id: "companyName",
+  type: "text",
+  label: "Company name",
+  visibleWhen: {
+    combinator: "and",
+    rules: [{ field: "personal.accountType", operator: "equals", value: "professional" }],
+  },
+}
+```
+
+### OR condition
+
+```ts
+// Show this step when the user is either a freelancer OR an agency
+{
+  id: "billing",
+  title: "Billing info",
+  url: "/billing",
+  visibleWhen: {
+    combinator: "or",
+    rules: [
+      { field: "personal.role", operator: "equals", value: "freelancer" },
+      { field: "personal.role", operator: "equals", value: "agency" },
+    ],
+  },
+}
+```
+
+### Nested AND/OR
+
+```ts
+// (age >= 65) AND (country === "FR" OR country === "BE")
+{
+  combinator: "and",
+  rules: [{ field: "basics.age", operator: "greaterThanOrEqual", value: 65 }],
+  groups: [
+    {
+      combinator: "or",
+      rules: [
+        { field: "basics.country", operator: "equals", value: "FR" },
+        { field: "basics.country", operator: "equals", value: "BE" },
+      ],
+    },
+  ],
+}
+```
+
+### External variable
+
+```ts
+// Show premium features only if the user has an active subscription
+// (value comes from your API, passed as externalVars to WaypointRunner)
+{
+  combinator: "and",
+  rules: [{ field: "$ext.subscriptionActive", operator: "equals", value: true }],
+}
+```
+
+## Low-level API
+
+```ts
+import { evaluateConditionGroup, isVisible, resolveFieldValue } from "@waypoint/core";
+
+// Evaluate a group
+const result: boolean = evaluateConditionGroup(group, data, externalVars);
+
+// Shorthand — undefined group always returns true
+const visible: boolean = isVisible(group, data, externalVars);
+
+// Resolve a dot-path to its current value
+const value: unknown = resolveFieldValue("personal.email", data, externalVars);
 ```

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@waypoint/core", "@waypoint/react", "@waypoint/next"],
+  transpilePackages: ["@waypoint/core", "@waypoint/react", "@waypoint/next", "@waypoint/builder"],
 };
 
 module.exports = nextConfig;

@@ -70,7 +70,7 @@ export function HeroSection() {
             Get Started →
           </Link>
           <a
-            href="https://github.com/mauc/waypoint"
+            href="https://github.com/tmauc/waypoint"
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"

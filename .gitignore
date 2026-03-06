@@ -8,5 +8,8 @@ out/
 .env.local
 .DS_Store
 coverage/
-.claude/
+test-results/
+playwright-report/
+.claude/*
+!.claude/skills/
 CLAUDE.md

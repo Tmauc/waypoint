@@ -2,6 +2,7 @@
   "introduction": "Introduction",
   "getting-started": "Getting Started",
   "concepts": "Concepts",
-  "api": "API Reference",
-  "guides": "Guides"
+  "api-reference": "API Reference",
+  "guides": "Guides",
+  "ai": "AI & Skills"
 }

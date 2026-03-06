@@ -1,0 +1,22 @@
+# Waypoint
+
+> Schema-driven multi-step journey framework for React & Next.js
+
+Waypoint turns complex multi-step flows into a portable JSON schema. Define steps, fields, validation rules and conditions once, render with WaypointRunner + useWaypointStep, build visually with WaypointBuilder.
+
+## Documentation
+
+- [Introduction](/introduction): What is Waypoint, four-package architecture, minimal example
+- [Getting Started](/getting-started): Installation, schema definition, WaypointRunner layout, useWaypointStep pages
+- [WaypointSchema](/concepts/journey-tree): Full type reference — StepDefinition, FieldDefinition, ConditionGroup, ExternalVariable
+- [Tree Resolution](/concepts/history): resolveTree(), navigation helpers, runtime store integration
+- [Conditions](/concepts/progress): ConditionGroup, 13 operators, nested groups, external variables
+- [Persistence](/concepts/multi-journey): Three persistence modes — zustand, backend-step, backend-manual
+- [API Reference — @waypoint/core](/api-reference/core): Schema types, createRuntimeStore, resolveTree, buildZodSchema, condition functions
+- [API Reference — @waypoint/react](/api-reference/react): useWaypoint, useWaypointStep headless hooks
+- [API Reference — @waypoint/next](/api-reference/next): WaypointRunner props, useWaypointStep (Next.js), useWaypointRuntimeContext
+- [API Reference — @waypoint/builder](/api-reference/builder): WaypointBuilder, WaypointTheme, useBuilderStore
+- [Next.js Integration](/guides/url-templates): Step routing, layout setup, page structure
+- [React Headless](/guides/resume): Custom router integration, manual store management
+- [Builder Guide](/guides/builder): Embed, save, preview mode, theming
+- [AI & Skills](/ai): LLM-ready docs, Claude Code skill installation

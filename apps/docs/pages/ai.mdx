@@ -1,0 +1,112 @@
+---
+title: AI & Skills
+---
+
+import { Callout, Tabs } from "nextra/components";
+
+# AI & Skills
+
+Use Waypoint documentation with AI agents. Install the Waypoint skill for Claude Code, Cursor, and other AI coding assistants.
+
+---
+
+## LLM-Ready Documentation
+
+Waypoint exposes machine-readable docs compatible with any AI tool that supports the [`llms.txt`](https://llmstxt.org) standard.
+
+| Endpoint | Description |
+|---|---|
+| [`/llms.txt`](/llms.txt) | Lightweight index — titles and descriptions of all pages |
+| [`/llms-full.txt`](/llms-full.txt) | Complete documentation in plain markdown |
+
+Point your AI assistant at either URL, or paste it directly into context.
+
+---
+
+## Install the Waypoint Skill
+
+The Waypoint skill gives your agent deep knowledge of all four packages — schema types, conditions, hooks, builder API, and real-world patterns — loaded on demand without bloating your context window.
+
+<Tabs items={["Claude Code", "All Agents", "Manual"]}>
+  <Tabs.Tab>
+    ```bash
+    npx skills add tmauc/waypoint -a claude-code
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    npx skills add tmauc/waypoint --all
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    # Copy the skill directly from the repo
+    cp -r .claude/skills/waypoint ~/.claude/skills/waypoint
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+<Callout type="info">
+  The skill uses **progressive disclosure** — only the name and description are loaded at startup. The full instructions and package references are read only when the agent decides the skill is relevant, keeping context windows efficient.
+</Callout>
+
+---
+
+## What's Included
+
+The skill covers all four Waypoint packages with full API references.
+
+<div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", margin: "1.5rem 0" }}>
+
+<div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+**@waypoint/core**
+
+`WaypointSchema` types · `createRuntimeStore()` · `resolveTree()` · `buildZodSchema()` · condition engine · `validateSchema()`
+</div>
+
+<div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+**@waypoint/react**
+
+`useWaypoint()` · `useWaypointStep()` · headless store integration · router-agnostic patterns
+</div>
+
+<div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+**@waypoint/next**
+
+`WaypointRunner` props · `useWaypointStep()` with RHF + Zod · `useWaypointRuntimeContext()` · init vs resume logic
+</div>
+
+<div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: "1rem" }}>
+**@waypoint/builder**
+
+`WaypointBuilder` props · `WaypointTheme` tokens · `DEFAULT_THEME` / `DARK_THEME` · `useBuilderStore()` actions
+</div>
+
+</div>
+
+---
+
+## Supported Agents
+
+The skill is distributed via [skills.sh](https://skills.sh) and works with any compatible agent:
+
+**Claude Code** · **Cursor** · **Windsurf** · **OpenCode** · and 40+ others
+
+---
+
+## Verify the Installation
+
+After installing the skill, test it with this prompt:
+
+```
+How do I create a multi-step journey with a conditional step that only appears
+when the user selects "business" as their account type?
+```
+
+A correct response should reference `WaypointSchema` with a `visibleWhen` condition on the step, `WaypointRunner` in a layout file, and `useWaypointStep()` in each page.
+
+---
+
+## Skill Source
+
+The skill lives in the repo at [`.claude/skills/waypoint/`](https://github.com/tmauc/waypoint/tree/master/.claude/skills/waypoint) and is versioned alongside the code. When the API changes, the skill is updated in the same commit.
