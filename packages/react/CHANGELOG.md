@@ -1,5 +1,13 @@
 # @waypointjs/react
 
+## 0.1.3
+
+### Patch Changes
+
+- Add DevPanel store prop, forceShow option and builder preview integration
+- Updated dependencies
+  - @waypointjs/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes

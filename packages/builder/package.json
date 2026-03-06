@@ -1,6 +1,6 @@
 {
   "name": "@waypointjs/builder",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "No-code journey builder for Waypoint",
   "keywords": [
     "waypoint",

@@ -1,6 +1,6 @@
 {
   "name": "@waypointjs/next",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Next.js integration for @waypointjs/react",
   "keywords": [
     "navigation",
