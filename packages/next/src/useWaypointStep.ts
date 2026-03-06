@@ -110,8 +110,8 @@ export function useWaypointStep(): WaypointStepReturn {
     [currentStep]
   );
 
-  // Build the Zod schema from visible fields
-  const zodSchema = useMemo(() => buildZodSchema(visibleFields), [visibleFields]);
+  // Build the Zod schema from visible fields (pass data for cross-field validation)
+  const zodSchema = useMemo(() => buildZodSchema(visibleFields, externalEnums, data), [visibleFields, externalEnums, data]);
 
   // Existing step data used as default values, with dynamic defaults as fallback
   const defaultValues = useMemo(

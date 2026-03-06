@@ -611,6 +611,144 @@ describe("inEnum / notInEnum rules", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Cross-field validation (refField)
+// ---------------------------------------------------------------------------
+
+describe("cross-field validation (refField)", () => {
+  const journeyData = {
+    planning: { horizon: 10, label: "premium" },
+    personal: { age: 25 },
+  };
+
+  it("greaterThan refField — number field validates against another field", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "age",
+          type: "number",
+          label: "Age",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "greaterThan", refField: "planning.horizon", message: "Age must be > horizon" },
+          ],
+        }),
+      ],
+      undefined,
+      journeyData
+    );
+    // horizon = 10, age = 25 → valid
+    expect(schema.safeParse({ age: 25 }).success).toBe(true);
+    // age = 5 → invalid
+    expect(schema.safeParse({ age: 5 }).success).toBe(false);
+    // age = 10 → invalid (greaterThan, not >=)
+    expect(schema.safeParse({ age: 10 }).success).toBe(false);
+  });
+
+  it("lessThanOrEqual refField — number field validates against another field", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "score",
+          type: "number",
+          label: "Score",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "lessThanOrEqual", refField: "personal.age", message: "Score must be <= age" },
+          ],
+        }),
+      ],
+      undefined,
+      journeyData
+    );
+    // age = 25, score = 20 → valid
+    expect(schema.safeParse({ score: 20 }).success).toBe(true);
+    // score = 25 → valid (<=)
+    expect(schema.safeParse({ score: 25 }).success).toBe(true);
+    // score = 30 → invalid
+    expect(schema.safeParse({ score: 30 }).success).toBe(false);
+  });
+
+  it("equals refField — string field validates against another field", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "confirm",
+          type: "text",
+          label: "Confirm",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "equals", refField: "planning.label", message: "Must match label" },
+          ],
+        }),
+      ],
+      undefined,
+      journeyData
+    );
+    expect(schema.safeParse({ confirm: "premium" }).success).toBe(true);
+    expect(schema.safeParse({ confirm: "other" }).success).toBe(false);
+  });
+
+  it("refField with missing data — rule is skipped (no crash)", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "age",
+          type: "number",
+          label: "Age",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "greaterThan", refField: "nonexistent.field", message: "Must be > ref" },
+          ],
+        }),
+      ],
+      undefined,
+      journeyData
+    );
+    // refField resolves to undefined → Number(undefined) = NaN → rule skipped
+    expect(schema.safeParse({ age: 5 }).success).toBe(true);
+  });
+
+  it("refField without data param — falls back gracefully", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "age",
+          type: "number",
+          label: "Age",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "greaterThan", refField: "planning.horizon", message: "Must be > horizon" },
+          ],
+        }),
+      ]
+      // no externalEnums, no data
+    );
+    // No data → resolveFieldValue returns undefined → NaN → rule skipped
+    expect(schema.safeParse({ age: 1 }).success).toBe(true);
+  });
+
+  it("static rule still works when refField is absent", () => {
+    const schema = buildZodSchema(
+      [
+        makeField({
+          id: "age",
+          type: "number",
+          label: "Age",
+          validation: [
+            { type: "required", message: "Required" },
+            { type: "greaterThan", value: 18, message: "Must be > 18" },
+          ],
+        }),
+      ],
+      undefined,
+      journeyData
+    );
+    expect(schema.safeParse({ age: 19 }).success).toBe(true);
+    expect(schema.safeParse({ age: 17 }).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Multiple fields
 // ---------------------------------------------------------------------------
 

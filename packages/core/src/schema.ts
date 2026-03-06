@@ -86,6 +86,11 @@ export interface ValidationRule {
   message: string;
   /** For "custom" type: identifier of the validator function registered at runtime */
   customValidatorId?: string;
+  /**
+   * Cross-field reference — "stepId.fieldId" path.
+   * When set, the comparison target is resolved from journey data instead of using `value`.
+   */
+  refField?: string;
 }
 
 // ---------------------------------------------------------------------------
