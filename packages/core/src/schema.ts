@@ -123,12 +123,26 @@ export interface SelectOption {
 // Field definition
 // ---------------------------------------------------------------------------
 
+/**
+ * A dynamic default rule: if the condition matches, use the given value
+ * as the field's default. First matching rule wins.
+ */
+export interface DynamicDefaultRule {
+  when: ConditionGroup;
+  value: unknown;
+}
+
 export interface FieldDefinition {
   id: string;
   type: FieldType;
   label: string;
   placeholder?: string;
   defaultValue?: unknown;
+  /**
+   * Conditional defaults — evaluated in order, first match wins.
+   * Falls back to `defaultValue` if no rule matches.
+   */
+  dynamicDefault?: DynamicDefaultRule[];
   /** Options for select/multiselect/radio fields (hardcoded) */
   options?: SelectOption[];
   /** Reference to an external enum — options resolved at runtime from app-provided enums */

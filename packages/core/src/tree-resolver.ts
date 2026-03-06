@@ -1,5 +1,5 @@
 import type { ExternalEnum, ExternalVariable, FieldDefinition, SelectOption, StepDefinition, WaypointSchema } from "./schema";
-import { type ExternalVars, type JourneyData, isVisible, resolveFieldValue } from "./conditions";
+import { type ExternalVars, type JourneyData, evaluateConditionGroup, isVisible, resolveFieldValue } from "./conditions";
 
 // ---------------------------------------------------------------------------
 // Resolved types
@@ -18,6 +18,11 @@ export interface ResolvedField {
    * Use `field.resolvedOptions ?? field.definition.options` when rendering.
    */
   resolvedOptions?: SelectOption[];
+  /**
+   * Resolved dynamic default value (first matching `dynamicDefault` rule).
+   * Use `field.resolvedDefaultValue ?? field.definition.defaultValue` for initial form values.
+   */
+  resolvedDefaultValue?: unknown;
 }
 
 /** A step after condition evaluation */
@@ -116,11 +121,24 @@ export function resolveTree(
         const enumDef = externalEnums.find((e) => e.id === fieldDef.externalEnumId);
         resolvedOptions = enumDef?.values;
       }
+
+      // Evaluate dynamic defaults — first matching rule wins
+      let resolvedDefaultValue: unknown;
+      if (fieldDef.dynamicDefault && fieldDef.dynamicDefault.length > 0) {
+        for (const rule of fieldDef.dynamicDefault) {
+          if (evaluateConditionGroup(rule.when, data, externalVars, externalEnums, skippedSteps)) {
+            resolvedDefaultValue = rule.value;
+            break;
+          }
+        }
+      }
+
       return {
         definition: fieldDef,
         visible: isVisible(fieldDef.visibleWhen, data, externalVars, externalEnums, skippedSteps),
         dependenciesMet: areDependenciesMet(fieldDef.dependsOn, data, externalVars),
         resolvedOptions,
+        resolvedDefaultValue,
       };
     });
 

@@ -501,6 +501,100 @@ describe("resolveTree — external enums", () => {
 });
 
 // ---------------------------------------------------------------------------
+// resolveTree — dynamicDefault
+// ---------------------------------------------------------------------------
+
+describe("resolveTree — dynamicDefault", () => {
+  const dynSchema: WaypointSchema = {
+    version: "1",
+    id: "dyn-default-test",
+    name: "Dynamic Default Test",
+    steps: [
+      {
+        id: "info",
+        title: "Info",
+        url: "/info",
+        fields: [
+          { id: "age", type: "number", label: "Age" },
+          {
+            id: "profession",
+            type: "text",
+            label: "Profession",
+            defaultValue: "employed",
+            dynamicDefault: [
+              {
+                when: {
+                  combinator: "and",
+                  rules: [{ field: "info.age", operator: "greaterThan", value: 65 }],
+                },
+                value: "retired",
+              },
+              {
+                when: {
+                  combinator: "and",
+                  rules: [{ field: "info.age", operator: "lessThan", value: 18 }],
+                },
+                value: "student",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it("resolvedDefaultValue is undefined when no rule matches", () => {
+    const tree = resolveTree(dynSchema, { info: { age: 30 } }, emptyVars);
+    const profession = tree.steps[0].fields.find((f) => f.definition.id === "profession");
+    expect(profession?.resolvedDefaultValue).toBeUndefined();
+  });
+
+  it("resolvedDefaultValue matches first matching rule", () => {
+    const tree = resolveTree(dynSchema, { info: { age: 70 } }, emptyVars);
+    const profession = tree.steps[0].fields.find((f) => f.definition.id === "profession");
+    expect(profession?.resolvedDefaultValue).toBe("retired");
+  });
+
+  it("resolvedDefaultValue picks second rule when first doesn't match", () => {
+    const tree = resolveTree(dynSchema, { info: { age: 15 } }, emptyVars);
+    const profession = tree.steps[0].fields.find((f) => f.definition.id === "profession");
+    expect(profession?.resolvedDefaultValue).toBe("student");
+  });
+
+  it("resolvedDefaultValue is undefined when dynamicDefault is not set", () => {
+    const tree = resolveTree(dynSchema, {}, emptyVars);
+    const age = tree.steps[0].fields.find((f) => f.definition.id === "age");
+    expect(age?.resolvedDefaultValue).toBeUndefined();
+  });
+
+  it("resolvedDefaultValue works with external vars", () => {
+    const extSchema: WaypointSchema = {
+      ...dynSchema,
+      steps: [{
+        ...dynSchema.steps[0],
+        fields: [{
+          id: "role",
+          type: "text",
+          label: "Role",
+          dynamicDefault: [{
+            when: {
+              combinator: "and",
+              rules: [{ field: "$ext.isPremium", operator: "equals", value: true }],
+            },
+            value: "vip",
+          }],
+        }],
+      }],
+    };
+    const tree = resolveTree(extSchema, {}, { isPremium: true });
+    expect(tree.steps[0].fields[0].resolvedDefaultValue).toBe("vip");
+
+    const tree2 = resolveTree(extSchema, {}, { isPremium: false });
+    expect(tree2.steps[0].fields[0].resolvedDefaultValue).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // resolveTree — skippedSteps
 // ---------------------------------------------------------------------------
 

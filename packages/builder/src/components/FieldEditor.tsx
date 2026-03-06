@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ValidationRule } from "@waypointjs/core";
+import type { ConditionGroup, DynamicDefaultRule, ValidationRule } from "@waypointjs/core";
 import { useBuilderStore } from "../store/builder-store";
 import { useBuilderExternalEnums, useBuilderReadOnly } from "../context";
 import { ConditionBuilder } from "./ConditionBuilder";
@@ -21,6 +21,8 @@ export function FieldEditor() {
 
   const [conditionModalOpen, setConditionModalOpen] = useState(false);
   const [validationModalOpen, setValidationModalOpen] = useState(false);
+  const [dynDefaultModalOpen, setDynDefaultModalOpen] = useState(false);
+  const [editingDynIdx, setEditingDynIdx] = useState<number | null>(null);
 
   const step = schema.steps.find((s) => s.id === selectedStepId);
   const field = step?.fields.find((f) => f.id === selectedFieldId);
@@ -93,6 +95,60 @@ export function FieldEditor() {
             }
           />
         </div>
+
+        {/* Dynamic defaults */}
+        <div style={styles.conditionRow}>
+          <div style={styles.conditionInfo}>
+            <div style={styles.label}>Dynamic defaults</div>
+            {(field.dynamicDefault?.length ?? 0) > 0 ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {field.dynamicDefault!.map((rule, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={styles.conditionBadge}>
+                      {rule.when.rules.length} rule{rule.when.rules.length !== 1 ? "s" : ""}
+                    </span>
+                    <span style={{ fontSize: 11, color: "var(--wp-text-subtle)" }}>
+                      → {JSON.stringify(rule.value)}
+                    </span>
+                    {!readOnly && (
+                      <>
+                        <button
+                          style={{ ...styles.editConditionBtn, fontSize: 10, padding: "2px 6px" }}
+                          onClick={() => { setEditingDynIdx(i); setDynDefaultModalOpen(true); }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          style={{ ...styles.clearConditionBtn, fontSize: 10, padding: "2px 6px" }}
+                          onClick={() => {
+                            const updated = field.dynamicDefault!.filter((_, j) => j !== i);
+                            updateField(step.id, field.id, { dynamicDefault: updated.length ? updated : undefined });
+                          }}
+                        >
+                          ×
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={styles.conditionNone}>No dynamic defaults</div>
+            )}
+          </div>
+          {!readOnly && (
+            <div style={styles.conditionActions}>
+              <button
+                style={styles.editConditionBtn}
+                onClick={() => { setEditingDynIdx(null); setDynDefaultModalOpen(true); }}
+              >
+                Add
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div style={styles.divider} />
 
         {/* External enum — shown for select/multiselect/radio when externalEnums are available */}
         {ENUM_FIELD_TYPES.includes(field.type) && externalEnums.length > 0 && (
@@ -236,6 +292,26 @@ export function FieldEditor() {
         </Modal>
       )}
 
+      {/* Dynamic default modal */}
+      {dynDefaultModalOpen && (
+        <DynDefaultModal
+          rule={editingDynIdx !== null ? field.dynamicDefault?.[editingDynIdx] : undefined}
+          onSave={(rule) => {
+            const current = field.dynamicDefault ?? [];
+            let updated: DynamicDefaultRule[];
+            if (editingDynIdx !== null) {
+              updated = current.map((r, i) => i === editingDynIdx ? rule : r);
+            } else {
+              updated = [...current, rule];
+            }
+            updateField(step.id, field.id, { dynamicDefault: updated });
+            setDynDefaultModalOpen(false);
+            setEditingDynIdx(null);
+          }}
+          onClose={() => { setDynDefaultModalOpen(false); setEditingDynIdx(null); }}
+        />
+      )}
+
       {/* Field condition modal */}
       {conditionModalOpen && (
         <Modal
@@ -260,6 +336,91 @@ export function FieldEditor() {
         </Modal>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DynDefaultModal — inline modal for adding/editing a dynamic default rule
+// ---------------------------------------------------------------------------
+
+function DynDefaultModal({
+  rule,
+  onSave,
+  onClose,
+}: {
+  rule?: DynamicDefaultRule;
+  onSave: (rule: DynamicDefaultRule) => void;
+  onClose: () => void;
+}) {
+  const [condition, setCondition] = useState<ConditionGroup | undefined>(rule?.when);
+  const [value, setValue] = useState(rule?.value != null ? String(rule.value) : "");
+
+  const canSave = condition && condition.rules.length > 0 && value !== "";
+
+  return (
+    <Modal
+      title={rule ? "Edit dynamic default" : "Add dynamic default"}
+      onClose={onClose}
+      width={620}
+    >
+      <p style={{ fontSize: 13, color: "var(--wp-text-muted)", margin: "0 0 16px" }}>
+        When the condition matches, this value will be used as the field default.
+      </p>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--wp-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+          Condition
+        </div>
+        <ConditionBuilder value={condition} onChange={setCondition} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "var(--wp-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+          Default value when condition matches
+        </div>
+        <input
+          style={{
+            fontSize: 13, padding: "6px 8px", border: "1px solid var(--wp-border-muted)",
+            borderRadius: "var(--wp-radius)", outline: "none", width: "100%", boxSizing: "border-box" as const,
+            background: "var(--wp-canvas)", color: "var(--wp-text)",
+          }}
+          value={value}
+          placeholder="Value to set as default"
+          onChange={(e) => setValue(e.target.value)}
+        />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <button
+          style={{
+            fontSize: 13, padding: "7px 16px", background: "transparent", color: "var(--wp-text-muted)",
+            border: "1px solid var(--wp-border)", borderRadius: "var(--wp-radius-lg)", cursor: "pointer",
+          }}
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+        <button
+          disabled={!canSave}
+          style={{
+            fontSize: 13, padding: "7px 20px", background: canSave ? "var(--wp-primary)" : "var(--wp-border)",
+            color: "var(--wp-canvas)", border: "none", borderRadius: "var(--wp-radius-lg)", cursor: canSave ? "pointer" : "not-allowed",
+            fontWeight: 600, opacity: canSave ? 1 : 0.5,
+          }}
+          onClick={() => {
+            if (!canSave || !condition) return;
+            // Try to parse as number/boolean for proper typing
+            let parsed: unknown = value;
+            if (value === "true") parsed = true;
+            else if (value === "false") parsed = false;
+            else if (!isNaN(Number(value)) && value.trim() !== "") parsed = Number(value);
+            onSave({ when: condition, value: parsed });
+          }}
+        >
+          {rule ? "Update" : "Add"}
+        </button>
+      </div>
+    </Modal>
   );
 }
 

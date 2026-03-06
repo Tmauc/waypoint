@@ -7,6 +7,7 @@ export type {
   ConditionOperator,
   ConditionRule,
   CustomTypeDefinition,
+  DynamicDefaultRule,
   ExternalEnum,
   ExternalVariable,
   FieldDefinition,

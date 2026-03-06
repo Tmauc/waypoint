@@ -183,11 +183,17 @@ export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps
 
           {/* Fields */}
           <div style={styles.fieldsContainer}>
-            {fields.map((field) => (
+            {fields.map((field) => {
+              // Use stored value, or fall back to dynamic/static default
+              const storedVal = stepData[field.definition.id];
+              const displayVal = (storedVal !== undefined && storedVal !== null && storedVal !== "")
+                ? storedVal
+                : (field.resolvedDefaultValue ?? field.definition.defaultValue ?? undefined);
+              return (
               <FieldRenderer
                 key={field.definition.id}
                 field={field}
-                value={stepData[field.definition.id]}
+                value={displayVal}
                 error={errors[field.definition.id]}
                 onChange={(val) => {
                   setFieldValue(field.definition.id, val);
@@ -200,7 +206,8 @@ export function PreviewPanel({ store, schema, externalEnums }: PreviewPanelProps
                   }
                 }}
               />
-            ))}
+              );
+            })}
           </div>
 
           {/* Navigation */}

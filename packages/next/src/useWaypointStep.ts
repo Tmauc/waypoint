@@ -113,9 +113,26 @@ export function useWaypointStep(): WaypointStepReturn {
   // Build the Zod schema from visible fields
   const zodSchema = useMemo(() => buildZodSchema(visibleFields), [visibleFields]);
 
-  // Existing step data used as default values
+  // Existing step data used as default values, with dynamic defaults as fallback
   const defaultValues = useMemo(
-    () => (currentStep ? (data[currentStep.definition.id] ?? {}) : {}),
+    () => {
+      if (!currentStep) return {};
+      const stored = data[currentStep.definition.id] ?? {};
+      // Merge dynamic/static defaults for fields that have no stored value
+      const merged: Record<string, unknown> = { ...stored };
+      for (const field of currentStep.fields) {
+        const fid = field.definition.id;
+        if (merged[fid] === undefined || merged[fid] === null || merged[fid] === "") {
+          const dynDefault = field.resolvedDefaultValue;
+          const staticDefault = field.definition.defaultValue;
+          const resolved = dynDefault ?? staticDefault;
+          if (resolved !== undefined) {
+            merged[fid] = resolved;
+          }
+        }
+      }
+      return merged;
+    },
     // Only recompute when the step changes (not on every data write)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentStep?.definition.id]
