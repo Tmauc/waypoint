@@ -35,6 +35,7 @@ interface StepDefinition {
   fields: FieldDefinition[];
   visibleWhen?: ConditionGroup;   // omit = always visible
   enableResumeFromHere?: boolean; // mark as a valid deep-link entry point
+  skippable?: boolean;            // allow user to skip this step without validation
 }
 ```
 
@@ -52,6 +53,12 @@ interface FieldDefinition {
   validation?: ValidationRule[];
   visibleWhen?: ConditionGroup;  // field-level visibility
   dependsOn?: string[];          // dot-paths that must have values before this field is shown
+  dynamicDefault?: DynamicDefaultRule[];  // conditional defaults — first match wins
+}
+
+interface DynamicDefaultRule {
+  when: ConditionGroup;     // condition to evaluate
+  value: unknown;           // default value if condition matches
 }
 
 interface SelectOption {
@@ -82,6 +89,7 @@ interface ValidationRule {
   value?: string | number;        // for rules that take a value
   message: string;                // shown to the user on error
   customValidatorId?: string;     // id registered via registerCustomValidator()
+  refField?: string;              // "stepId.fieldId" — cross-field comparison target
 }
 
 type ValidationRuleType =
@@ -194,6 +202,7 @@ interface WaypointRuntimeState {
   externalVars: Record<string, unknown>;
   currentStepId: string | null;
   history: string[];               // visited step IDs in order
+  skippedSteps: string[];          // step IDs marked as skipped
   isSubmitting: boolean;
   completed: boolean;
 }
@@ -219,6 +228,8 @@ store.getState().setCurrentStep(stepId);
 store.getState().truncateHistoryAt(stepId);  // remove all history entries after stepId
 store.getState().setIsSubmitting(boolean);
 store.getState().setCompleted(boolean);
+store.getState().skipStep(stepId);           // mark step as skipped
+store.getState().unskipStep(stepId);         // unmark previously skipped step
 store.getState().reset();                    // clear all state
 ```
 
@@ -259,6 +270,8 @@ import { resolveTree } from "@waypointjs/core";
 const tree = resolveTree(schema, data, externalVars);
 // or with external enum resolution:
 const tree = resolveTree(schema, data, externalVars, externalEnums);
+// or with skipped steps:
+const tree = resolveTree(schema, data, externalVars, externalEnums, skippedSteps);
 // Returns ResolvedTree
 ```
 
@@ -280,6 +293,7 @@ interface ResolvedField {
   visible: boolean;                  // after field-level visibleWhen
   dependenciesMet: boolean;          // all dependsOn paths have values
   resolvedOptions?: SelectOption[];  // populated when field.externalEnumId matches a provided enum
+  resolvedDefaultValue?: unknown;    // from dynamicDefault (first matching rule) or undefined
 }
 ```
 
@@ -330,6 +344,8 @@ import { buildZodSchema } from "@waypointjs/core";
 const zodSchema = buildZodSchema(fields);
 // With external enums (required for inEnum / notInEnum rules to resolve)
 const zodSchema = buildZodSchema(fields, externalEnums);
+// With data for cross-field validation (resolves ValidationRule.refField from journey data)
+const zodSchema = buildZodSchema(fields, externalEnums, data);
 
 const result = zodSchema.safeParse(formValues);
 ```
@@ -378,8 +394,9 @@ evaluateConditionGroup(group, data, externalVars, externalEnums?)  // boolean
 isVisible(group, data, externalVars, externalEnums?)               // boolean
 
 // Resolve a dot-path to its value
-resolveFieldValue("personal.email", data, externalVars)  // unknown
-resolveFieldValue("$ext.isPremium", data, externalVars)  // unknown
+resolveFieldValue("personal.email", data, externalVars)       // unknown — step field value
+resolveFieldValue("$ext.isPremium", data, externalVars)       // unknown — external variable
+resolveFieldValue("$step.personal.skipped", data, externalVars, undefined, skippedSteps)  // boolean — step skip status
 ```
 
 ---

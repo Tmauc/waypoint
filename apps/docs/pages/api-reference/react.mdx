@@ -53,12 +53,15 @@ interface WaypointState {
   isLastStep: boolean;
   isSubmitting: boolean;
   missingExternalVars: string[];
+  skippedSteps: string[];          // step IDs marked as skipped
 
   // Actions (delegates to store.getState())
   setFieldValue(stepId: string, fieldId: string, value: unknown): void;
   setStepData(stepId: string, data: Record<string, unknown>): void;
   setExternalVar(varId: string, value: unknown): void;
   setCurrentStep(stepId: string): void;
+  skipStep(stepId: string): void;
+  unskipStep(stepId: string): void;
   reset(): void;
 }
 ```

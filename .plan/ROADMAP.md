@@ -296,10 +296,10 @@
 
 | Package | Tests | Statut |
 |---|---|---|
-| `@waypointjs/core` | 231 | ✅ tous verts (Phase 1 + 34 runtime-store + 31 zod-generator + 10 inEnum conditions) |
-| `@waypointjs/builder` | 50 | ✅ tous verts |
+| `@waypointjs/core` | 256 | ✅ tous verts |
+| `@waypointjs/builder` | 62 | ✅ tous verts |
 | `apps/demo` (E2E) | 71 | ✅ tous verts (40 builder + 31 runtime) |
-| **Total** | **352** | ✅ |
+| **Total** | **318+ unit, 71 E2E** | ✅ |
 
 ---
 
@@ -374,36 +374,41 @@ apps/
 `master`
 
 ## État global
-**Phases 1, 2, 3 complètes ✅**
-- 317 tests · 0 échecs
+**Phases 1, 2, 3 complètes ✅ — Phase 4 en cours**
+- 318+ unit tests · 71 E2E · 0 échecs
 - Packages publiés sur npm · Apps déployées sur Vercel
 
 ---
 
 ## PHASE 4 — Schema enrichment & Builder UX
 
-### 4.1 — Step skippable
-- [ ] Prop `skippable?: true` sur `StepDefinition`
-- [ ] Runner : bouton "Passer cette étape" → stocke `{ __skipped: true }` dans les data
-- [ ] Builder : toggle "Skippable" dans StepEditor
-- [ ] Conditions peuvent référencer `step.skipped`
+### 4.1 — Step skippable ✅
+- [x] `skippable?: boolean` sur `StepDefinition`
+- [x] `skippedSteps: string[]` dans le runtime store state (séparé des data)
+- [x] Actions : `skipStep(stepId)`, `unskipStep(stepId)` dans le runtime store
+- [x] Builder : toggle "Skippable" dans StepEditor
+- [x] Runner : `skipStep()` action + `canSkip` boolean retournés par `useWaypointStep`
+- [x] Conditions peuvent référencer `$step.stepId.skipped` (via `resolveFieldValue`)
+- [x] Callback `onStepSkipped?: (stepId) => void` sur WaypointRunner
+- [x] 12 nouveaux tests (runtime-store + conditions + tree-resolver)
 
-### 4.2 — Step timeout
-- [ ] Prop `timeout?: number` (secondes) sur `StepDefinition`
-- [ ] Runner : countdown + redirect automatique à expiration
-- [ ] Callback `onStepTimeout?: (stepId) => void` sur WaypointRunner
-- [ ] Builder : champ timeout dans StepEditor
+### 4.3 — Validation cross-fields / cross-steps ✅
+- [x] `refField?: string` sur `ValidationRule` — quand défini, la cible de comparaison est résolue depuis les data du parcours au lieu d'une `value` statique
+- [x] `buildZodSchema(fields, externalEnums?, data?)` — 3e param `data?: JourneyData` pour la résolution cross-field
+- [x] Helper `resolveRuleValue()` dans zod-generator — résout `refField` via `resolveFieldValue`
+- [x] Builder : ValidationBuilder a un bouton toggle ⇄ sur les règles comparateur pour basculer entre valeur statique et référence à un champ (field picker)
+- [x] `useWaypointStep` passe `data` à `buildZodSchema`
+- [x] 6 nouveaux tests
 
-### 4.3 — Validation cross-fields / cross-steps
-- [ ] Nouveau type de `ValidationRule` : `{ type: "crossField", ref: "stepId.fieldId", operator, message }`
-- [ ] `buildZodSchema` supporte `.refine()` avec accès aux data des steps précédentes
-- [ ] Builder : ConditionBuilder réutilisé pour définir ces règles
-
-### 4.4 — Valeurs par défaut dynamiques
-- [ ] `defaultValue` peut être une `ConditionRule` au lieu d'une valeur statique
-- [ ] Ex : `age > 80` → `defaultValue: "retraite"` sur le field `profession`
-- [ ] Résolution dans `tree-resolver.ts` à chaque changement de data
-- [ ] Builder : UI dédiée dans FieldEditor
+### 4.4 — Valeurs par défaut dynamiques ✅
+- [x] `DynamicDefaultRule { when: ConditionGroup; value: unknown }` dans schema.ts
+- [x] `dynamicDefault?: DynamicDefaultRule[]` sur `FieldDefinition`
+- [x] `resolvedDefaultValue?: unknown` sur `ResolvedField` — calculé dans `resolveTree`
+- [x] Première règle qui matche gagne, fallback vers `defaultValue` statique
+- [x] Builder : DynDefaultModal dans FieldEditor pour éditer les defaults dynamiques
+- [x] PreviewPanel affiche les defaults résolus
+- [x] `useWaypointStep` merge `resolvedDefaultValue` dans les defaults du formulaire
+- [x] 5 nouveaux tests
 
 ### 4.5 — Custom field types (app-provided) ✅
 - [x] `CustomTypeDefinition` réutilisé depuis `@waypointjs/core` (id, label, icon?, defaultValidation?, metadata?)
@@ -440,12 +445,13 @@ apps/
 - [x] Bouton ⧉ sur chaque field card → `duplicateField()` : clone avec nouvel ID + label "(copy)", insère juste après
 - [x] 12 tests unitaires (duplicateStep × 7 + duplicateField × 5)
 
-### 4.8 — Drag & drop dans le builder
-- [ ] Drag & drop pour réordonner les steps (colonne 1)
-- [ ] Drag & drop pour réordonner les fields (colonne 2)
-- [ ] Bibliothèque : `@dnd-kit/core` (support touch/mobile natif)
-- [ ] Respecte les contraintes de dépendances (bloqué si move invalide)
-- [ ] Fallback ↑↓ conservé pour accessibilité
+### 4.8 — Drag & drop dans le builder ✅
+- [x] `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities`
+- [x] `DndSortable.tsx` — composants réutilisables `SortableList`, `SortableItem`, `DragHandle`
+- [x] `TouchSensor` (150ms delay) pour mobile, `PointerSensor` (8px threshold) pour desktop, `KeyboardSensor` pour a11y
+- [x] Contraintes de dépendances appliquées au drop (utilise `isMoveValid`/`isFieldMoveValid` existants)
+- [x] Drag overlay avec ombre pour feedback visuel
+- [x] Fallback ↑↓ conservé
 
 ### 4.9 — Mode read-only / embed du builder ✅
 - [x] Prop `readOnly?: boolean` sur `<WaypointBuilder />`

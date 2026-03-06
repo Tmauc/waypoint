@@ -45,6 +45,7 @@ import { WaypointRunner } from "@waypointjs/next";
 | `onDataChange` | `(data) => void` | | Called on every field value change |
 | `customFieldTypes` | `CustomTypeDefinition[]` | | App-provided custom field types — accessible via `useWaypointRuntimeContext().customFieldTypes` |
 | `externalEnums` | `ExternalEnum[]` | | App-provided option lists — resolved into `ResolvedField.resolvedOptions` by the tree resolver |
+| `onStepSkipped` | `(stepId: string) => void` | | Called when a step is skipped via `skipStep()` |
 | `children` | `React.ReactNode` | ✓ | Step pages |
 
 ### Init / Resume logic
@@ -103,10 +104,12 @@ const {
 | `isLastStep` | `boolean` | No next step in resolved tree |
 | `isSubmitting` | `boolean` | True while handleSubmit is running |
 | `errors` | `FieldErrors` | react-hook-form validation errors |
+| `canSkip` | `boolean` | Whether the current step has `skippable: true` |
+| `skipStep` | `() => void` | Skip the step without validation — only available when `canSkip` is true |
 
 ### handleSubmit flow
 
-1. Validate form via react-hook-form + Zod (built from `buildZodSchema(fields)`)
+1. Validate form via react-hook-form + Zod (built from `buildZodSchema(fields, externalEnums, data)` — supports cross-field validation via `refField`)
 2. Persist step data into the store: `store.setStepData(stepId, values)`
 3. Re-resolve tree with new data
 4. If visible step IDs changed → `truncateHistoryAt(stepId)` (prevents stale forward history)
@@ -179,7 +182,7 @@ Access the raw `WaypointRunner` context from any descendant component.
 ```ts
 import { useWaypointRuntimeContext } from "@waypointjs/next";
 
-const { schema, store, onComplete, onStepComplete, onDataChange } =
+const { schema, store, onComplete, onStepComplete, onDataChange, onStepSkipped } =
   useWaypointRuntimeContext();
 ```
 
@@ -192,6 +195,7 @@ interface WaypointRuntimeContextValue {
   onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
   onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  onStepSkipped?: (stepId: string) => void;
   customFieldTypes?: CustomTypeDefinition[];
   externalEnums?: ExternalEnum[];
 }

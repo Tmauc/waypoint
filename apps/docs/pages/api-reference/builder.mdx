@@ -56,6 +56,8 @@ The builder renders in a **3-column layout**:
 
 The builder requires explicit dimensions — set `height: 100%` on a sized parent or use `style={{ height: "100vh" }}` for full-screen.
 
+Steps and fields can be reordered by drag & drop (desktop and mobile). Drag the handle to move items. Dependency constraints are enforced — invalid drops are rejected with an error message. Arrow buttons remain available as a fallback for keyboard and accessibility.
+
 ### Preview mode
 
 Clicking **▶ Tester** in the toolbar switches to a **split view**:
@@ -142,6 +144,8 @@ The value input for these operators becomes a dropdown to select the target enum
 
 **Validation builder** — The same `is in enum` / `not in enum` rule types are available in the validation rules modal.
 
+Comparator rules (equals, greaterThan, etc.) support a **field reference** mode. Click the toggle button to switch between a static value and a reference to another field in the journey. When in field reference mode, the value is resolved from journey data at validation time.
+
 ### Passing enums to the runner
 
 Use the same array with `WaypointRunner` so enum-based conditions and validations evaluate correctly at runtime:
@@ -157,6 +161,14 @@ And pass it to `buildZodSchema` when building Zod schemas manually:
 ```ts
 const zodSchema = buildZodSchema(fields, externalEnums);
 ```
+
+---
+
+## Dynamic defaults
+
+Each field supports **dynamic defaults** — conditional default values evaluated at tree resolution time. In the field editor, click "Add rule" under "Dynamic defaults" to define rules with conditions and values. The first matching rule wins; if none match, the static `defaultValue` is used.
+
+See [DynamicDefaultRule](/api-reference/core#dynamicdefaultrule) in the core API reference for the programmatic interface.
 
 ---
 

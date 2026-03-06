@@ -42,6 +42,7 @@ interface WaypointRuntimeState {
   externalVars: Record<string, unknown>;
   currentStepId: string | null;
   history: string[];      // step IDs visited in order
+  skippedSteps: string[]; // step IDs marked as skipped
   isSubmitting: boolean;
   completed: boolean;
 }
@@ -58,6 +59,8 @@ interface WaypointRuntimeState {
 | `setExternalVar` | `(varId, value) => void` | Set an external variable |
 | `setCurrentStep` | `(stepId) => void` | Navigate to a step |
 | `truncateHistoryAt` | `(stepId) => void` | Remove all history after stepId |
+| `skipStep` | `(stepId) => void` | Mark a step as skipped |
+| `unskipStep` | `(stepId) => void` | Unmark a previously skipped step |
 | `reset` | `() => void` | Clear all state |
 
 ---
@@ -74,6 +77,9 @@ const tree = resolveTree(schema, data, externalVars);
 
 // With external enum resolution:
 const tree = resolveTree(schema, data, externalVars, externalEnums);
+
+// With skipped steps (5th param):
+const tree = resolveTree(schema, data, externalVars, externalEnums, skippedSteps);
 ```
 
 When `externalEnums` is provided, fields with `externalEnumId` will have their `resolvedOptions` populated.
@@ -88,6 +94,8 @@ interface ResolvedField {
   dependenciesMet: boolean;
   /** Populated when field.externalEnumId matches a provided external enum */
   resolvedOptions?: SelectOption[];
+  /** Computed from dynamicDefault rules — first matching rule wins, falls back to static defaultValue */
+  resolvedDefaultValue?: unknown;
 }
 ```
 
@@ -128,6 +136,8 @@ import { buildZodSchema } from "@waypointjs/core";
 const zodSchema = buildZodSchema(fields);
 // or with external enum resolution (required for inEnum / notInEnum rules):
 const zodSchema = buildZodSchema(fields, externalEnums);
+// or with cross-field validation (3rd param — journey data for refField resolution):
+const zodSchema = buildZodSchema(fields, externalEnums, data);
 
 const result = zodSchema.safeParse(formValues);
 ```
@@ -159,6 +169,15 @@ const result = zodSchema.safeParse(formValues);
 
 For `inEnum` / `notInEnum`, pass the same `externalEnums` array to `buildZodSchema` that you pass to `resolveTree`.
 
+<Callout type="info">
+  **Cross-field validation (refField)** — Comparator rules (`equals`, `greaterThan`, `lessThan`, etc.) support an optional `refField?: string` property. When set, the comparison uses the referenced field's value from journey data instead of a static `value`. Pass the `data` argument to `buildZodSchema` for cross-field resolution.
+
+  ```ts
+  // Example: age must be greater than the value of planning.horizon
+  { type: "greaterThan", refField: "planning.horizon", message: "Age must be > horizon" }
+  ```
+</Callout>
+
 ```ts
 // Register a custom validator before using it
 import { registerCustomValidator } from "@waypointjs/core";
@@ -184,6 +203,9 @@ isVisible(group, data, externalVars, externalEnums?)              // boolean
 // Resolve a dot-path to its value
 resolveFieldValue("stepId.fieldId", data, externalVars) // unknown
 resolveFieldValue("$ext.varId", data, externalVars)     // unknown
+
+// Resolve step skipped status (4th param: skippedSteps)
+resolveFieldValue("$step.personal.skipped", data, externalVars, skippedSteps) // boolean
 ```
 
 ### ConditionOperator
@@ -203,6 +225,41 @@ type ConditionOperator =
 ```
 
 For `inEnum` / `notInEnum`, `rule.value` is the `ExternalEnum.id`. The enum's values are resolved at evaluation time from the `externalEnums` argument.
+
+---
+
+## DynamicDefaultRule
+
+Conditional default values evaluated at tree resolution time. Defined on `FieldDefinition.dynamicDefault`.
+
+```ts
+interface DynamicDefaultRule {
+  when: ConditionGroup;  // same condition format as field/step visibility
+  value: unknown;        // the default value to apply when conditions match
+}
+```
+
+During `resolveTree()`, each field's `dynamicDefault` rules are evaluated in order. The first matching rule sets `ResolvedField.resolvedDefaultValue`. If no rule matches, the static `defaultValue` is used.
+
+```ts
+// Example: default country based on external variable
+{
+  id: "country",
+  type: "select",
+  label: "Country",
+  defaultValue: "us",
+  dynamicDefault: [
+    {
+      when: { logic: "AND", conditions: [{ field: "$ext.locale", operator: "equals", value: "fr-FR" }] },
+      value: "fr",
+    },
+    {
+      when: { logic: "AND", conditions: [{ field: "$ext.locale", operator: "equals", value: "de-DE" }] },
+      value: "de",
+    },
+  ],
+}
+```
 
 ---
 

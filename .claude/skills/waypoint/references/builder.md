@@ -104,9 +104,21 @@ The builder has two modes:
 - Column 2: Field list for the selected step
 - Column 3: Step editor (title, URL, conditions) + Field editor (type, label, validation, conditions)
 
+### Drag & drop
+
+Steps and fields support drag-to-reorder via @dnd-kit (`DndSortable.tsx` with `SortableList`, `SortableItem`, `DragHandle`).
+- Drag handle on each card for reordering
+- Touch sensor (150ms delay), pointer sensor (8px activation threshold), keyboard sensor for a11y
+- Dependency constraints enforced on drop (invalid reorders are rejected)
+- Fallback up/down buttons remain for non-drag interactions
+
 **Preview mode** (after clicking "▶ Tester") — 2-column split view:
 - Column left: Resolved step list with status indicators (✓ done / → current / ○ upcoming / – hidden)
 - Column right: Live form renderer for the current step
+
+### Field editor — Dynamic defaults
+
+Fields can have conditional default values via `DynDefaultModal`. Each rule has a `when` condition group and a `value`. Rules are evaluated in order -- first matching rule wins, falling back to `field.defaultValue` if none match. Stored as `field.dynamicDefault: DynamicDefaultRule[]`.
 
 ### Field editor — Visibility conditions
 
@@ -120,6 +132,7 @@ Each field has a **Validation** row in the right panel. Click "Add" or "Edit" to
 - Each row: `[ rule type ] [ value + ⊞ picker ] [ error message ] [✕]`
 - Supports all `ValidationRuleType` values including `inEnum`/`notInEnum`
 - For `is in enum` / `not in enum` rules, the value input becomes an enum name dropdown
+- Cross-field validation: a toggle button on comparator rules switches between static value and field reference (`refField`)
 
 ### Preview mode
 

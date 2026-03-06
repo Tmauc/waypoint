@@ -51,6 +51,9 @@ interface WaypointRunnerProps {
    */
   customFieldTypes?: CustomTypeDefinition[];
 
+  /** Called when the user skips a skippable step */
+  onStepSkipped?: (stepId: string) => void;
+
   /** App-provided external enum lists — resolved into ResolvedField.resolvedOptions by the tree resolver */
   externalEnums?: ExternalEnum[];
 
@@ -147,6 +150,10 @@ interface WaypointStepReturn {
   // Actions
   handleSubmit: () => Promise<void>;
   goBack: () => void;
+  skipStep: () => void;         // skip current step (only if canSkip is true)
+
+  // Skip
+  canSkip: boolean;             // true if current step has skippable: true
 
   // State
   isSubmitting: boolean;
@@ -156,7 +163,7 @@ interface WaypointStepReturn {
 
 ### handleSubmit behavior
 
-1. Calls `form.trigger()` — validates all visible fields via Zod
+1. Calls `form.trigger()` — validates all visible fields via Zod (uses `buildZodSchema(fields, externalEnums, data)` for cross-field validation)
 2. If invalid: returns early (errors set on `form.formState.errors`)
 3. Sets `isSubmitting = true`
 4. Snapshots current visible step IDs
@@ -239,6 +246,7 @@ interface WaypointRuntimeContextValue {
   onComplete?: (data: Record<string, Record<string, unknown>>) => void | Promise<void>;
   onStepComplete?: (stepId: string, data: Record<string, unknown>) => void | Promise<void>;
   onDataChange?: (data: Record<string, Record<string, unknown>>) => void;
+  onStepSkipped?: (stepId: string) => void;   // from WaypointRunner.onStepSkipped
   customFieldTypes?: CustomTypeDefinition[];  // from WaypointRunner.customFieldTypes
   externalEnums?: ExternalEnum[];             // from WaypointRunner.externalEnums
 }
